@@ -1,0 +1,781 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>全国天气质量可视化</title>
+    <script src="d3.min.js"></script>
+    <script src="d3-v6-tip.js"></script>
+    <link rel="stylesheet" href="d3-tip.css">
+    <link rel="stylesheet" type="text/css" href="http://unpkg.com/view-design/dist/styles/iview.css">
+    <script type="text/javascript" src="http://vuejs.org/js/vue.min.js"></script>
+    <script type="text/javascript" src="http://unpkg.com/view-design/dist/iview.min.js"></script>
+</head>
+<body>
+<div id="app">
+    
+    <i-menu mode="horizontal" :theme="theme1" active-name="1" @on-select="ChangeMenu">
+        <Menu-Item name="1">
+            <Icon type="ios-paper"></Icon>
+            城市空气质量数据
+        </Menu-Item>
+        <Menu-Item name="2" v-on:click=>
+            <Icon type="ios-people"></Icon>
+            城市空气质量排名
+        </Menu-Item>
+        <Menu-Item name="3">
+            <Icon type="ios-stats"></Icon>
+            地区AQI排名
+        </Menu-Item>
+        <Menu-Item name="4">
+            <Icon type="ios-construct"></Icon>
+            地域分布
+        </Menu-Item>
+    </i-menu>
+    <div v-show="menuId == '1'">
+        <div id="cardBox">
+            <Card class="timeSelection" >
+                <p slot="title">
+                    <Icon type="ios-film-outline"></Icon>
+                    注意事项
+                </p>
+                <ul>
+                    <div>
+                        <p>可查询时间范围为 2014年5月14日 至 2021年4月19日。</p>
+                        <br>
+                    </div>
+                </ul>
+            </Card>
+            <Card class="timeSelection" >
+                <p slot="title">
+                    <Icon type="ios-film-outline"></Icon>
+                    选择查询日期
+                </p>
+                <ul>
+                    <div>
+                        <p>您当前查询的时间为 {{queryTime}}。</p>
+                        <br>
+                        <i-select v-model="selectYear" placeholder="请选择年" clearable style="width:200px">
+                            <i-option v-for="item in yearList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+                        </i-select>
+                        <i-select v-model="selectMonth" placeholder="请选择月" clearable style="width:200px">
+                            <i-option v-for="item in monthList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+                        </i-select>
+                        <i-select v-model="selectDay" placeholder="请选择日" clearable style="width:200px">
+                            <i-option v-for="item in dayList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+                        </i-select>
+                        <i-button @click="SubmitDate">展示</i-button>
+                        <Modal v-model="invalidDate" title="警告">您输入了不合法的日期，请重试</Modal>
+                        <Modal v-model="undefinedDate" title="警告">您未选择确定的日期</Modal>
+                    </div>
+                </ul>
+            </Card>
+            <Card class="timeSelection" >
+                <p slot="title">
+                    <Icon type="ios-film-outline"></Icon>
+                    选择查询指标
+                </p>
+                <ul>
+                    <div>
+                        <i-select v-model="selectTarget" placeholder="请选择指标" clearable style="width:200px">
+                            <i-option v-for="item in targetList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+                        </i-select>
+                        
+                        <!-- <i-button @click="SubmitDate">展示</i-button>
+                        <Modal v-model="invalidDate" title="警告">您输入了不合法的日期，请重试</Modal>
+                        <Modal v-model="undefinedDate" title="警告">您未选择确定的日期</Modal> -->
+                    </div>
+                </ul>
+            </Card>
+        </div>
+        <svg width="1400" height="700" id="mapSvg" class="svgs" style='display: block; margin: 0 auto;'></svg>
+    </div>
+    <div v-show="menuId == '2'">
+        <Radio-Group v-model="qualityRank" @on-change="ChangeQualityRank">
+            <Radio label="AQI最好"></Radio>
+            <Radio label="AQI最差"></Radio>
+        </Radio-Group>
+        <svg width="1400" height="700" id="rankSvg" class="svgs"></svg>
+    </div>
+    <div v-show="menuId == '3'">
+        <i-select v-model="selectRegion" placeholder="请选择地区" clearable @on-change="ChangeRegion" style="width:200px">
+            <i-option v-for="item in regionList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+        </i-select>
+
+    </div>
+    <div v-show="menuId == '4'">
+        <Radio-Group v-model="qualityDistribution" @on-change="ChangeQualityDistribution">
+            <Radio label="AQI最好"></Radio>
+            <Radio label="AQI最差"></Radio>
+        </Radio-Group>
+    </div>
+
+
+
+    <!-- <br>
+    <p>Change theme</p>
+    <Radio-Group v-model="theme1">
+        <Radio label="light"></Radio>
+        <Radio label="dark"></Radio>
+        <Radio label="primary"></Radio>
+    </Radio-Group> -->
+    
+    
+</div>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            theme1: 'light',
+            menuId: '1',
+
+            selectYear: '',
+            yearList: [],
+            selectMonth: '',
+            monthList: [],
+            selectDay: '',
+            dayList: [],
+
+            invalidDate: false,
+            undefinedDate: false,
+
+            queryTime: "xxx",
+
+            selectTarget: '',
+            targetList: [
+                {
+                    value: 'AQI',
+                    label: 'AQI'
+                },
+                {
+                    value: 'PM2.5',
+                    label: 'PM2.5'
+                },
+                {
+                    value: 'PM10',
+                    label: 'PM10'
+                },
+                {
+                    value: 'SO2',
+                    label: 'SO2'
+                },
+                {
+                    value: 'NO2',
+                    label: 'NO2'
+                },
+                {
+                    value: 'O3',
+                    label: 'O3'
+                },
+                {
+                    value: 'CO',
+                    label: 'CO'
+                }
+            ],
+            
+            qualityRank: 'AQI最好',
+
+            selectRegion: '',
+            regionList:[
+                {
+                    value: '华中',
+                    label: '华中'
+                },
+                {
+                    value: '华北',
+                    label: '华北'
+                },
+                {
+                    value: '华东',
+                    label: '华东'
+                },
+                {
+                    value: '华南',
+                    label: '华南'
+                },
+                {
+                    value: '西北',
+                    label: '西北'
+                },
+                {
+                    value: '东北',
+                    label: '东北'
+                },
+                {
+                    value: '西南',
+                    label: '西南'
+                }
+            ],
+
+            qualityDistribution: 'AQI最好'
+            
+        },
+        beforeMount () {
+            console.log('==============' + 'beforeMount' + '===================')
+            for(var i = 2014; i < 2022; i++){
+                this.yearList.push({
+                    value: i,
+                    label: i.toString() + "年"
+                })
+            }
+            console.log(this.yearList)
+
+            for(var i = 1; i < 13; i++){
+                this.monthList.push({
+                    value: i,
+                    label: i.toString() + "月",
+                })
+            }
+            console.log(this.monthList)
+
+
+            for(var i = 1; i < 32; i++){
+                this.dayList.push({
+                    value: i,
+                    label: i.toString() + "日"
+                })
+            }
+            console.log(this.dayList)
+        },
+        computed: {
+        },
+        methods: {
+            // show: function () {
+            //     this.visible = true;
+            // }
+        }
+    })
+
+    /**
+     * change the open menu item and control badge to remind the new messages
+     * @name changeMenu
+     * @param null
+     * @return null
+     */
+     const mapSvg = d3.select('#mapSvg');
+    const width = mapSvg.attr('width');
+    const height = mapSvg.attr('height');
+    const margin = { top: 60, right: 0, bottom: 0, left: 0 };
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
+    const mainGroup = mapSvg.append('g')
+    .attr('transform', `translate(${margin.left}, ${margin.top})`);
+    const tip = d3.tip().html((event, d) => d.properties.name);
+    mapSvg.call(tip);
+    tip.attr('class', 'd3-tip');
+
+    d3.json('china.json').then(async data => {
+        //const projection = d3.geoNaturalEarth1();
+        const projection = d3.geoMercator();
+        projection.fitSize([innerWidth, innerHeight], data);
+        const path = d3.geoPath().projection(projection);
+        console.log(path(data.features))
+        mainGroup.selectAll('path').data(data.features).join('path')
+            .attr('stroke', 'white').attr('fill', 'green')
+            .attr('d', path)
+            .attr('id', d => d.properties.name)
+            .on('mouseover', tip.show)
+            .on('mouseout', tip.hide);
+        
+        var zoom = d3.zoom()
+        .scaleExtent([0.1, 10]) // 鼠标缩放的距离, 范围
+        .on('start', () => { // zoom 事件发生前 将变小手
+            console.log('start')
+            mapSvg.style('cursor', 'pointer')
+        })
+        .on('zoom', (e) => {
+            console.log(e)
+            mapSvg.selectAll('rect').attr('transform',
+                'translate(' + e.transform.x + ',' + e.transform.y + ') scale(' + e.transform.k + ')'
+            )
+        })
+        .on('end', () => {
+            mapSvg.style('cursor', 'default')
+        });
+
+        mapSvg.call(zoom).call(zoom.transform, d3.zoomIdentity.scale(1))
+    });
+
+    /**
+     * change the open menu item and control badge to remind the new messages
+     * @name ChangeMenu
+     * @param name<string>:the name of the selected submenu
+     * @return null
+     */
+    function ChangeMenu(name) {
+      app.menuId = name;
+    }
+
+    /**
+     * select the year
+     * @name SelectYear
+     * @param name<string>:the name of the selected year
+     * @return null
+     */
+    function SelectYear(name) {
+        console.log('==============' + 'SelectYear' + '===================')
+    }
+
+    /**
+     * submit the selected date
+     * @name SubmitDate
+     * @param null
+     * @return null
+     */
+    function SubmitDate() {
+        console.log('==============' + 'SubmitDate' + '===================')
+        console.log(app.selectYear, app.selectMonth, app.selectDay)
+
+        app.queryTime = "xxx"
+        var validYear = app.selectYear != "" && app.selectYear != undefined
+        var validMonth = app.selectMonth != "" && app.selectMonth != undefined
+        var validDay = app.selectDay != "" && app.selectDay != undefined
+
+        if(validYear != true){
+            app.undefinedDate = true
+        }
+        else if(validDay == true && validMonth != true){
+            app.undefinedDate = true
+        }
+
+        if(app.selectYear == 2021 && validMonth == true){
+            if(app.selectMonth > 4){
+                app.invalidDate = true
+                return
+            }
+            else if(app.selectMonth == 4 && validDay == true){
+                if(app.selectDay > 19){
+                    app.invalidDate = true
+                    return
+                }
+            }
+        }
+        else if(app.selectYear == 2014 && validMonth == true){
+            if(app.selectMonth < 5){
+                app.invalidDate = true
+                return
+            }
+            else if(app.selectMonth == 5 && validDay == true){
+                if(app.selectDay < 14){
+                    app.invalidDate = true
+                    return
+                }
+            }
+        }
+
+        // validate the regular date
+        if(validMonth == true){
+            if((app.selectMonth == 4 || app.selectMonth == 6 || app.selectMonth == 9 || app.selectMonth == 11) && validDay == true){
+                if(app.selectDay > 30){
+                    app.invalidDate = true
+                    return
+                }
+            }
+            else if(app.selectMonth == 2 && validDay == true){
+                if(app.selectYear == 2016 || app.selectYear == 2020){
+                    if(app.selectDay > 29){
+                        app.invalidDate = true
+                        return
+                    }
+                }
+                else{
+                    if(app.selectDay > 28){
+                        app.invalidDate = true
+                        return
+                    }
+                }
+            }
+        }
+
+        // generate the time string
+        if(validYear == true){
+            app.queryTime = app.selectYear.toString() + "年"
+            if(validMonth == true){
+                app.queryTime = app.queryTime + app.selectMonth.toString() + "月"
+                if(validDay == true){
+                    app.queryTime = app.queryTime + app.selectDay.toString() + "日"
+                }
+            }
+        }
+    }
+
+    /**
+     * change the quality rank best or worse (Histogram)
+     * @name ChangeQualityRank
+     * @param null
+     * @return null
+     */
+    function ChangeQualityRank() {
+        console.log('==============' + 'ChangeQualityRank' + '===================')
+        if(app.qualityRank == "AQI最好"){
+            console.log('==============' + '最好' + '===================')
+            // to do
+            const svg = d3.select('#rankSvg');
+            const width = svg.attr('width');
+            const height = svg.attr('height');
+            const margin = {top: 60, right: 30, bottom: 60, left: 150};
+            const innerWidth = width - margin.left - margin.right;
+            const innerHeight = height - margin.top - margin.bottom;
+            const mainGroup = svg.append('g')
+            .attr('transform', `translate(${margin.left}, ${margin.top})`)
+            .attr('id', 'maingroup');
+            // console.log(d);
+            const xValue = d => d.globalsale;
+            const yValue = d => d.platform;
+
+            
+            let xSacle, yScale;
+            const xBarValue = (datum) => {return datum.globalsale};
+            const yBarValue = (datum) => {return datum.platform};
+            const xAxisLabel = 'GlobalSale';
+            const yAxisLabel = 'Platform';
+            
+            let totalduration = 20000;
+            let aduration = 800;
+
+            const platforms = ["Wii", "NES", "GB", "DS", "X360", "PS3", "PS2", "SNES", "GBA", "3DS", "PS4", "N64", "PS", "XB", "PC", "2600", "PSP", "XOne", "GC", "WiiU", "GEN", "DC", "PSV", "SAT", "SCD", "WS", "NG", "TG16", "3DO", "GG", "PCFX"];
+
+            const colors = {
+                'Wii':"#DD6B66", 
+                'NES':"#759AA0", 
+                'GB':"#E69D87", 
+                'DS':"#8DC1A9",
+                'X360':"#EA7E53", 
+                'PS3':"#EEDD78", 
+                'PS2':"#73A373",
+                'SNES':"#73B9BC",
+                'GBA':"#7289AB", 
+                '3DS':"#91CA8C", 
+                'PS4':"#F49F42", 
+                'N64':"#AA312C",
+                'PS':"#39656D",
+                'XB':"#B35E45", 
+                'PC':"#4B8E6F", 
+                '2600 ':"#B6481C",
+                'PSP':"#BBA838", 
+                'XOne':"#386F38", 
+                'GC':"#388589", 
+                'WiiU':"#385177",
+                'GEN':"#50964A", 
+                'DC':"#C16B0D", 
+                'PSV':"#FF8500", 
+                'SAT':"#45BFD3",
+                'SCD':"#FF5F2F", 
+                'WS':"#50F3A8", 
+                'NG':"#FF4800", 
+                'TG16':"#FFDE1A",
+                '3DO':"#41D541", 
+                'GG':"#32E7EF", 
+                'PCFX':"#ef638e",
+                '2600':"#B6481C",
+            };
+
+            const renderinit = function(){
+                let g = d3.select('#maingroup');
+
+                xScale = d3.scaleLinear()
+                .domain([0, 1300])
+                .range([0, innerWidth-100]);
+                yScale = d3.scaleBand()
+                .domain(platforms)
+                .range([0, innerHeight-20])
+                .padding(0.01);
+
+                const xAxisMethod = d3.axisBottom(xScale);
+                const yAxisMethod = d3.axisLeft(yScale);
+
+                const xAxisGroup = mainGroup.append('g').call(xAxisMethod)
+                    .attr("class","x-axis")
+                    .attr('font-size', '1.2em')
+                    // .attr('font-weight', 'bold');
+                xAxisGroup.append('text')
+                .attr('font-size', '2em')
+                .attr('y', 60)
+                .attr('x', innerWidth / 2)
+                .attr('fill', '#504f4f')
+                .text(xAxisLabel);
+
+                const yAxisGroup = mainGroup.append('g').call(yAxisMethod)
+                    .attr("class","y-axis")
+                    .attr('font-size', '1.2em')
+                    // .attr('font-weight', 'bold');
+                yAxisGroup.append('text')
+                .attr('font-size', '2em')
+                .attr('transform', `rotate(-90)`)
+                .attr('x', -(innerHeight - 20) / 2)
+                .attr('y', -70)
+                .attr('fill', '#504f4f')
+                .text(yAxisLabel)
+                .attr('text-anchor', 'middle') 
+                .text(yAxisLabel);
+                xAxisGroup.attr('transform', `translate(${0}, ${innerHeight-20})`);
+
+                let legend_color = Object.values(colors);
+                let legend_text = Object.keys(colors);
+                // draw legend
+                var legend = d3.select('#maingroup').selectAll(".legend")
+                .data(legend_text).join('g')
+                .attr("class", "legend")
+                .attr("transform", function(d, i) { return "translate(" + (innerWidth - 50) + "," + ((i-1) * 22) + ")"; });
+        
+                // draw legend colored rectangles
+                legend.append("rect")
+                .data(legend_color) 
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", 30)
+                .attr("height", 20)
+                .style("fill", d => d);
+        
+                // draw legend text
+                legend.append("text")
+                .attr("x", 40)
+                .attr("y", 9)
+                .attr("dy", ".5em")
+                .attr("text-anchor", "start")
+                .attr("fill", "#504f4f")
+                .text(d => d); 
+
+                d3.select(".legend").remove();
+
+                g.append("text")
+                .attr('id', 'date_text')
+                .attr("x", innerWidth - 120)
+                .attr("y", innerHeight - 80)
+                .attr("dy", ".5em")
+                .style("text-anchor", "end")
+                .attr("fill", "#504f4f")
+                .attr('font-size', '5em')
+                .attr('font-weight', 'bold')
+                .text(' ');
+            }
+
+            /* 
+                Loading data and preprocessing data. 
+                Note that you can also preprocessing data in your own way using your prefered language, e.g., Python. 
+            */
+
+            d3.csv('Data/pgy.csv').then(data =>{
+                // process data
+                var sales = {};
+                var platforms = [];
+                for (var i = 0; i < data.length; i++){
+
+                var year = parseInt(data[i]['year']);
+                var platform = data[i]['platform'];
+                var globalsale = data[i]['globalsale'];
+
+                if (platforms.indexOf(platform) === -1){
+                    platforms.push(platform);
+                }
+
+                if(sales[year] !== undefined){
+                    sales[year][platform] = globalsale;
+                }
+                else{
+                    sales[year] = {};
+                    sales[year][platform] = globalsale;
+                }
+                }
+
+                renderinit();
+
+                // set the animation interval; 
+                var gamesales = []
+                
+                let c = 1980; 
+                let intervalId = setInterval(function(){
+                    if(c >= 2021){
+                        console.log('time to close this animation');
+                        clearInterval(intervalId); 
+                    }else{
+                    const transition = d3.transition().duration(aduration).ease(d3.easeLinear);
+                    console.log('year', c);
+
+                    gamesales = gamesales.sort(function(a, b){return parseFloat(b.globalsale) - parseFloat(a.globalsale)});
+
+                    var tmpgamesales = [];
+                    for (var i = 0; i < gamesales.length; i++){
+                        tmpgamesales.push({
+                        'platform':gamesales[i]['platform'],
+                        'globalsale':gamesales[i]['globalsale']
+                        });
+                    }
+                    for (var key in sales[String(c)]){
+                        var tmp = tmpgamesales.find(item => item.platform == key);
+                        if (tmp !== undefined){
+                        tmp['globalsale'] = parseFloat(sales[String(c)][key]);
+                        }
+                        else{
+                        tmpgamesales.push({
+                            'platform':key,
+                            'globalsale':parseFloat(sales[String(c)][key])
+                        });
+                        }
+
+                        gamesales = [];
+                        for (var i = 0; i < tmpgamesales.length; i++){
+                        gamesales.push({
+                            'platform':tmpgamesales[i]['platform'],
+                            'globalsale':tmpgamesales[i]['globalsale']
+                        });
+                        }
+                    }
+
+                    let g = d3.select('#maingroup');
+
+                    xScale = d3.scaleLinear()
+                    .domain([0, d3.max(gamesales, d => d.globalsale)+50])
+                    .range([0, innerWidth-80]);
+
+                    d3.select("g.x-axis")
+                    .transition(transition)
+                    .call(d3.axisBottom(xScale));
+
+                    d3.selectAll("g.x-axis g.tick")
+                    .select("line.grid-line")
+                    .remove();
+
+                    let xlines = d3.selectAll("g.x-axis g.tick")
+                    .append("line")
+                    .classed("grid-line",true);
+                    xlines.attr("x1",0)
+                    .attr("y1",0)
+                    .attr("x2",0)
+                    .attr("y2",-innerHeight);
+
+
+                    var tmpPlatforms = [];
+                    for (var i = 0; i < gamesales.length; i++){
+                        tmpPlatforms.push(gamesales[i]['platform']);
+                    }
+
+                    yScale = d3.scaleBand()
+                    .domain(tmpPlatforms)
+                    .range([0, innerHeight-20])
+                    .padding(0.01);
+                    
+                    d3.select("g.y-axis")
+                    .transition(transition)
+                    .call(d3.axisLeft(yScale));
+
+                    d3.selectAll("g.y-axis g.tick")
+                    .select("line.grid-line")
+                    .remove();
+
+                    let ylines = d3.selectAll("g.y-axis g.tick")
+                    .append("line")
+                    .classed("grid-line",true);
+
+                    ylines.attr("x1",0)
+                    .attr("y1",0)
+                    .attr("x2", innerWidth)
+                    .attr("y2",0);
+
+
+                    d3.select('#date_text').text(String(c)+'年');
+
+                    
+                    g.selectAll('.rect-barchart')
+                    .data(gamesales, data => data.platform)
+                    .join('rect')
+                    .transition(transition)
+                    .attr('id', function(d){
+                        return d.platform;
+                    })
+                    .attr('value', function(d){
+                        return d.globalsale;
+                    })
+                    .attr('class', 'rect-barchart')
+                    .attr('fill', function(datum){return colors[datum.platform]})
+                    .attr("rx", 5)
+                    .attr('x', 0)
+                    .attr('height', yScale.bandwidth() * 4 / 5)
+                    .attr('width', (datum) => {return xScale(xBarValue(datum))})
+                    .attr("y", function(d, i) { //对排序之后的横坐标重排
+                        return yScale(tmpPlatforms[i]) + yScale.bandwidth() / 10 ;
+                    });
+
+                    const textbarchart = g.selectAll('.text-barchart').data(gamesales, data => data.platform);
+                    textbarchart.enter().append('text')
+                    .attr('class', 'text-barchart')
+                    .attr('y', datum => yScale(yBarValue(datum)) + yScale.bandwidth() / 2)
+                    .attr('x', (datum) => {return xScale(xBarValue(datum))})
+                    .attr('dx', 10)
+                    .attr('text-anchor', 'start')
+                    .attr("fill", "#504f4f")
+                    .attr('font-size', '1.2em')
+                    .attr('font-weight', 'bold');
+
+                    textbarchart.text(d => d.globalsale)
+                    .transition(transition)
+                    .tween('text', function(d) {
+                        var i = d3.interpolate(this.textContent, d.globalsale);
+                        return function(t){
+                            this.textContent = d3.format('.2f')(i(t));
+                        }
+                    })
+                    .attr('x', (datum) => {
+                        return xScale(xBarValue(datum));
+                    })
+                    .attr("y", function(d, i) { //对排序之后的横坐标重排
+                        return yScale(tmpPlatforms[i]) + yScale.bandwidth()/2 + 5;
+                    });
+                    
+                    c = c + 1;
+                    }
+                }, aduration); 
+                
+            })
+        }
+        else{
+            console.log('==============' + '最差' + '===================')
+            // to do
+        }
+    }
+
+    /**
+     * change the quality distribution best or worse (Pie chart)
+     * @name ChangeQualityRank
+     * @param null
+     * @return null
+     */
+     function ChangeQualityDistribution() {
+        console.log('==============' + 'ChangeQualityDistribution' + '===================')
+        if(app.qualityRank == "AQI最好"){
+            console.log('==============' + '最好' + '===================')
+            // to do
+        }
+        else{
+            console.log('==============' + '最差' + '===================')
+            // to do
+        }
+    }
+
+    /**
+     * change the quality region 
+     * @name ChangeRegion
+     * @param null
+     * @return null
+     */
+     function ChangeRegion() {
+        console.log('==============' + 'ChangeRegion' + '===================')
+        console.log('当前选择的展示区域是', app.selectRegion)
+        // to do
+    }
+    
+
+  </script>
+
+  <style scoped>
+      .timeSelection {
+        width:400px;
+        margin-left: 20px;
+        margin-top: 20px;
+      }
+
+      #cardBox {
+        display: flex;
+      }
+  </style>
+
+</body>
+</html>
