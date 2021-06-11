@@ -134,6 +134,8 @@
             selectDay: '',
             dayList: [],
 
+            timeRange: '',
+
             invalidDate: false,
             undefinedDate: false,
 
@@ -205,8 +207,9 @@
                 }
             ],
 
-            qualityDistribution: 'AQI最好'
-            
+            qualityDistribution: 'AQI最好',
+
+            projection: d3.geoMercator()
         },
         beforeMount () {
             console.log('==============' + 'beforeMount' + '===================')
@@ -235,6 +238,10 @@
             }
             console.log(this.dayList)
         },
+        mounted () {
+            console.log('==============' + 'mounted' + '===================')
+            RenderMap()
+        },
         computed: {
         },
         methods: {
@@ -245,54 +252,168 @@
     })
 
     /**
-     * change the open menu item and control badge to remind the new messages
-     * @name changeMenu
+     * render the map in the first part
+     * @name RenderMap
      * @param null
      * @return null
      */
-     const mapSvg = d3.select('#mapSvg');
-    const width = mapSvg.attr('width');
-    const height = mapSvg.attr('height');
-    const margin = { top: 60, right: 0, bottom: 0, left: 0 };
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
-    const mainGroup = mapSvg.append('g')
-    .attr('transform', `translate(${margin.left}, ${margin.top})`);
-    const tip = d3.tip().html((event, d) => d.properties.name);
-    mapSvg.call(tip);
-    tip.attr('class', 'd3-tip');
+    function RenderMap() {
+        const mapSvg = d3.select('#mapSvg');
+        const width = mapSvg.attr('width');
+        const height = mapSvg.attr('height');
+        const margin = { top: 60, right: 0, bottom: 0, left: 0 };
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+        const mainGroup = mapSvg.append('g')
+        .attr('id', 'mainGroup')
+        .attr('transform', `translate(${margin.left}, ${margin.top})`);
+        const tip = d3.tip().html((event, d) => d.properties.name);
+        mapSvg.call(tip);
+        tip.attr('class', 'd3-tip');
 
-    d3.json('china.json').then(async data => {
-        //const projection = d3.geoNaturalEarth1();
-        const projection = d3.geoMercator();
-        projection.fitSize([innerWidth, innerHeight], data);
-        const path = d3.geoPath().projection(projection);
-        console.log(path(data.features))
-        mainGroup.selectAll('path').data(data.features).join('path')
-            .attr('stroke', 'white').attr('fill', 'green')
-            .attr('d', path)
-            .attr('id', d => d.properties.name)
-            .on('mouseover', tip.show)
-            .on('mouseout', tip.hide);
-        
-        var zoom = d3.zoom()
-        .scaleExtent([0.1, 10]) // 鼠标缩放的距离, 范围
-        .on('start', () => { // zoom 事件发生前 将变小手
-            console.log('start')
-            mapSvg.style('cursor', 'pointer')
-        })
-        .on('zoom', (e) => {
-            console.log(e)
-            mapSvg.selectAll('rect').attr('transform',
-                'translate(' + e.transform.x + ',' + e.transform.y + ') scale(' + e.transform.k + ')'
-            )
-        })
-        .on('end', () => {
-            mapSvg.style('cursor', 'default')
+        d3.json('Data/china.json').then(async data => {
+            //const projection = d3.geoNaturalEarth1();
+            // const projection = d3.geoMercator();
+            app.projection.fitSize([innerWidth, innerHeight], data);
+            const path = d3.geoPath().projection(app.projection);
+            console.log(path(data.features))
+            mainGroup.selectAll('path').data(data.features).join('path')
+                .attr('stroke', 'white').attr('fill', 'green')
+                .attr('d', path)
+                .attr('id', d => d.properties.name)
+                .on('mouseover', tip.show)
+                .on('mouseout', tip.hide);
+            
+            var zoom = d3.zoom()
+            .scaleExtent([0.1, 10]) // 鼠标缩放的距离, 范围
+            .on('start', () => { // zoom 事件发生前 将变小手
+                console.log('start')
+                mapSvg.style('cursor', 'pointer')
+            })
+            .on('zoom', (e) => {
+                console.log(e)
+                mapSvg.selectAll('rect').attr('transform',
+                    'translate(' + e.transform.x + ',' + e.transform.y + ') scale(' + e.transform.k + ')'
+                )
+            })
+            .on('end', () => {
+                mapSvg.style('cursor', 'default')
+            });
+
+            mapSvg.call(zoom).call(zoom.transform, d3.zoomIdentity.scale(1))
+            
         });
 
-        mapSvg.call(zoom).call(zoom.transform, d3.zoomIdentity.scale(1))
-    });
+        RenderScatterPlot('AQI', 'day', 2019, 5, 16)
+
+    }
+
+    /**
+     * render the scatter plot of the specific time range
+     * @name RenderScatterPlot
+     * @param time<string>:the name of the input csv
+     * @return null
+     */
+    function RenderScatterPlot(target, time, year, month, day) {
+        console.log('==============' + 'RenderScatterPlot' + '===================')
+        const colorMap = [
+            '#7FFF00',  // 0-50
+            '#FFD700',  // 50-100
+            '#FF8C00',  // 100-150
+            '#FF0000',  // 150-200
+            '#B22222',  // 200-300
+            '#800000',  // 300+
+        ]
+
+        console.log(target, time, year, month, day)
+        var filename = 'Data/' + target + '_' + time + 'mean.csv'
+        console.log('Open file name', filename)
+
+        d3.csv(filename).then(async data => {
+
+            var renderData
+            var renderDate
+            
+            if(time == 'day') {
+                renderDate = year.toString() + month.toString().padStart(2, '0') + day.toString().padStart(2, '0')
+            }
+            else if(time == 'month') {
+                renderDate = year.toString() + month.toString().padStart(2, '0')
+            }
+            else {
+                renderDate = year.toString()
+            }
+
+            console.log('renderDate', renderDate)
+            
+            for(var i = 0; i < data.length; i++){
+                if(data[i][''] == renderDate){
+                    console.log('find date', data[i])
+                    renderData = data[i]
+                    break
+                }
+            }
+            console.log('renderData', renderData)            
+
+            var locations = []
+            var targetValue = []
+            
+            d3.csv('Data/citynamewithlocation.csv').then(locationData =>{
+                console.log('locationData', locationData)
+                for(var key in renderData){
+                    locationData.map(e=>{
+                        if(key == e.City){
+                            // console.log('find city', e)
+                            var loc = new Array(parseFloat(e.Longtitude), parseFloat(e.Latitude))
+                            locations.push(loc)
+                            targetValue.push(parseFloat(renderData[key]))
+                        }
+                    })
+                }
+
+                console.log('locations', locations)
+                console.log('targetValue', targetValue)
+
+                mainGroup = d3.select('#mainGroup')
+                mainGroup.selectAll('circle')
+                .data(locations)
+                .enter().append('circle')
+                .attr('cx', function(d) {
+                    return app.projection(d)[0]
+                })
+                .attr('cy', function(d) {
+                    return app.projection(d)[1]
+                })
+                .data(targetValue)
+                .attr('r', 7)
+                .attr('fill', function(d) {
+                    if(d < 50){
+                        return colorMap[0]
+                    }
+                    else if(d < 100){
+                        return colorMap[1]
+                    }
+                    else if(d < 150){
+                        return colorMap[2]
+                    }
+                    else if(d < 200){
+                        return colorMap[3]
+                    }
+                    else if(d < 300){
+                        return colorMap[4]
+                    }
+                    else {
+                        return colorMap[5]
+                    }
+                })
+
+            });
+
+            
+
+        });
+      
+    }
 
     /**
      * change the open menu item and control badge to remind the new messages
@@ -387,10 +508,13 @@
 
         // generate the time string
         if(validYear == true){
+            app.timeRange = 'year'
             app.queryTime = app.selectYear.toString() + "年"
             if(validMonth == true){
+                app.timeRange = 'month'
                 app.queryTime = app.queryTime + app.selectMonth.toString() + "月"
                 if(validDay == true){
+                    app.timeRange = 'day'
                     app.queryTime = app.queryTime + app.selectDay.toString() + "日"
                 }
             }
