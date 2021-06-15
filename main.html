@@ -75,7 +75,7 @@
                 </p>
                 <ul>
                     <div>
-                        <i-select v-model="selectTarget" placeholder="请选择指标" clearable style="width:200px">
+                        <i-select v-model="selectTarget" placeholder="请选择指标" style="width:200px">
                             <i-option v-for="item in targetList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
                         </i-select>
                         
@@ -141,7 +141,7 @@
 
             queryTime: "xxx",
 
-            selectTarget: '',
+            selectTarget: 'AQI',
             targetList: [
                 {
                     value: 'AQI',
@@ -158,10 +158,6 @@
                 {
                     value: 'SO2',
                     label: 'SO2'
-                },
-                {
-                    value: 'NO2',
-                    label: 'NO2'
                 },
                 {
                     value: 'O3',
@@ -251,6 +247,8 @@
         }
     })
 
+    const circleRadius = 7
+
     /**
      * render the map in the first part
      * @name RenderMap
@@ -304,7 +302,7 @@
             
         });
 
-        RenderScatterPlot('AQI', 'day', 2019, 5, 16)
+        // RenderScatterPlot('AQI', 'day', 2015, 5, 16)
 
     }
 
@@ -325,8 +323,10 @@
             '#800000',  // 300+
         ]
 
-        console.log(target, time, year, month, day)
-        var filename = 'Data/' + target + '_' + time + 'mean.csv'
+
+
+        // console.log(target, time, year, month, day)
+        var filename = 'Data_v2/' + target + '_' + time + 'mean.csv'
         console.log('Open file name', filename)
 
         d3.csv(filename).then(async data => {
@@ -344,22 +344,23 @@
                 renderDate = year.toString()
             }
 
-            console.log('renderDate', renderDate)
+            // console.log('renderDate', renderDate)
             
             for(var i = 0; i < data.length; i++){
                 if(data[i][''] == renderDate){
-                    console.log('find date', data[i])
+                    // console.log('find date', data[i])
                     renderData = data[i]
                     break
                 }
             }
-            console.log('renderData', renderData)            
+            // console.log('renderData', renderData)            
 
             var locations = []
             var targetValue = []
+            var cityName = []
             
             d3.csv('Data/citynamewithlocation.csv').then(locationData =>{
-                console.log('locationData', locationData)
+                // console.log('locationData', locationData)
                 for(var key in renderData){
                     locationData.map(e=>{
                         if(key == e.City){
@@ -367,14 +368,25 @@
                             var loc = new Array(parseFloat(e.Longtitude), parseFloat(e.Latitude))
                             locations.push(loc)
                             targetValue.push(parseFloat(renderData[key]))
+                            cityName.push(key)
                         }
                     })
                 }
 
                 console.log('locations', locations)
-                console.log('targetValue', targetValue)
+                // console.log('targetValue', targetValue)
+                console.log('cityName', cityName)
+
+
+                const changeColor = (event) => {
+                    d3.select(event.currentTarget)
+                    .attr('fill',  d3.interpolateRainbow(Math.random()))
+                }
 
                 mainGroup = d3.select('#mainGroup')
+                mainGroup.selectAll('#scatterCircle').remove()
+                mainGroup.selectAll('#scatterText').remove()
+
                 mainGroup.selectAll('circle')
                 .data(locations)
                 .enter().append('circle')
@@ -385,7 +397,15 @@
                     return app.projection(d)[1]
                 })
                 .data(targetValue)
-                .attr('r', 7)
+                .attr('r', circleRadius)
+                .attr('display', function(d) {
+                    if(d == -1) {
+                        return 'none'
+                    }
+                    else {
+                        return 'block'
+                    }
+                })
                 .attr('fill', function(d) {
                     if(d < 50){
                         return colorMap[0]
@@ -406,6 +426,36 @@
                         return colorMap[5]
                     }
                 })
+                .attr('id', 'scatterCircle')
+                .on('mouseover', changeColor)
+
+                mainGroup.selectAll('text')
+                // .append('text')
+                .data(locations)
+                .enter().append('text')
+                .attr('font-size', '0.8em')
+                .attr('fill', '#FFFFFFF')
+                .attr('transform', function(d){
+                    return `translate(${app.projection(d)[0] - circleRadius}, ${app.projection(d)[1] + circleRadius})`
+                })
+                .data(targetValue)
+                .attr('display', function(d) {
+                    if(d == -1) {
+                        return 'none'
+                    }
+                    else {
+                        return 'block'
+                    }
+                })
+                .text(function(d){
+                    return d.toFixed(0)
+                })
+                .attr('id', 'scatterText')
+                // .data(cityName)
+                // .text(function(d){
+                //     return d
+                // })
+                
 
             });
 
@@ -518,6 +568,17 @@
                     app.queryTime = app.queryTime + app.selectDay.toString() + "日"
                 }
             }
+        }
+
+        // render the scatter map
+        if(validDay == true){
+            RenderScatterPlot(app.selectTarget, 'day', app.selectYear, app.selectMonth, app.selectDay)
+        }
+        else if(validMonth == true){
+            RenderScatterPlot(app.selectTarget, 'month', app.selectYear, app.selectMonth, app.selectDay)
+        }
+        else{
+            RenderScatterPlot(app.selectTarget, 'year', app.selectYear, app.selectMonth, app.selectDay)
         }
     }
 
