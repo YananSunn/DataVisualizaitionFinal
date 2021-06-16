@@ -17,22 +17,26 @@
     <i-menu mode="horizontal" :theme="theme1" active-name="1" @on-select="ChangeMenu">
         <Menu-Item name="1">
             <Icon type="ios-paper"></Icon>
-            城市空气质量数据
+            全国空气质量数据
         </Menu-Item>
-        <Menu-Item name="2" v-on:click=>
+        <Menu-Item name="2">
+            <Icon type="ios-paper"></Icon>
+            城市历史空气质量数据
+        </Menu-Item>
+        <Menu-Item name="3" v-on:click=>
             <Icon type="ios-people"></Icon>
             城市空气质量排名
         </Menu-Item>
-        <Menu-Item name="3">
+        <Menu-Item name="4">
             <Icon type="ios-stats"></Icon>
             地区AQI排名
         </Menu-Item>
-        <Menu-Item name="4">
+        <Menu-Item name="5">
             <Icon type="ios-construct"></Icon>
             地域分布
         </Menu-Item>
     </i-menu>
-    <div id="content" v-show="menuId == '1'">
+    <div id="content1" v-show="menuId == '1'">
         <div id="cardBox">
             <div class="cardDiv">
                 <Card class="timeSelection" >
@@ -96,20 +100,45 @@
         </div>
         <svg width="1100" height="700" id="mapSvg" class="svgs" style='display: block; margin: 0 auto;'></svg>
     </div>
-    <div v-show="menuId == '2'">
+    <div id="content2" v-show="menuId == '2'">
+        <Radio-Group v-model="selectPlot" @on-change="ChangePlot">
+            <Radio label="散点图/折线图"></Radio>
+            <Radio label="箱线图"></Radio>
+        </Radio-Group>
+        <div id="plots">
+            <div id="plotAQI">
+                <svg class="plotSvg" width="1200" height="300" id="plotAQISvg" class="svgs"></svg>
+            </div>
+            <div id="plotPM25">
+                <svg class="plotSvg" width="1200" height="300" id="plotPM25Svg" class="svgs"></svg>
+            </div>
+            <div id="plotPM10">
+                <svg class="plotSvg" width="1200" height="300" id="plotPM10Svg" class="svgs"></svg>
+            </div>
+            <div id="plotSO2">
+                <svg class="plotSvg" width="1200" height="300" id="plotSO2Svg" class="svgs"></svg>
+            </div>
+            <div id="plotO3">
+                <svg class="plotSvg" width="1200" height="300" id="plotO3Svg" class="svgs"></svg>
+            </div>
+            <div id="plotCO">
+                <svg class="plotSvg" width="1200" height="300" id="plotCOSvg" class="svgs"></svg>
+            </div>
+        </div>
+    </div>
+    <div v-show="menuId == '3'">
         <Radio-Group v-model="qualityRank" @on-change="ChangeQualityRank">
             <Radio label="AQI最好"></Radio>
             <Radio label="AQI最差"></Radio>
         </Radio-Group>
         <svg width="1400" height="700" id="rankSvg" class="svgs"></svg>
     </div>
-    <div v-show="menuId == '3'">
+    <div v-show="menuId == '4'">
         <i-select v-model="selectRegion" placeholder="请选择地区" clearable @on-change="ChangeRegion" style="width:200px">
             <i-option v-for="item in regionList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
         </i-select>
-
     </div>
-    <div v-show="menuId == '4'">
+    <div v-show="menuId == '5'">
         <Radio-Group v-model="qualityDistribution" @on-change="ChangeQualityDistribution">
             <Radio label="AQI最好"></Radio>
             <Radio label="AQI最差"></Radio>
@@ -176,6 +205,15 @@
                     label: 'CO'
                 }
             ],
+
+            selectPlot: '散点图/折线图',
+            selectCity: '北京',
+            AQIDayMean: [],
+            PM25DayMean: [],
+            PM10DayMean: [],
+            SO2DayMean: [],
+            O3DayMean: [],
+            CODayMean: [],
             
             qualityRank: 'AQI最好',
 
@@ -223,7 +261,7 @@
                     label: i.toString() + "年"
                 })
             }
-            console.log(this.yearList)
+            // console.log(this.yearList)
 
             for(var i = 1; i < 13; i++){
                 this.monthList.push({
@@ -231,8 +269,7 @@
                     label: i.toString() + "月",
                 })
             }
-            console.log(this.monthList)
-
+            // console.log(this.monthList)
 
             for(var i = 1; i < 32; i++){
                 this.dayList.push({
@@ -240,13 +277,38 @@
                     label: i.toString() + "日"
                 })
             }
-            console.log(this.dayList)
+            // console.log(this.dayList)
+
+            for(var i = 1400025600000; i <= 1618790400000; i = i + 86400000){
+                this.AQIDayMean.push({
+                    date: new Date(i),
+                    value: 0
+                })
+                this.PM25DayMean.push({
+                    date: new Date(i),
+                    value: 0
+                })
+                this.PM10DayMean.push({
+                    date: new Date(i),
+                    value: 0
+                })
+                this.SO2DayMean.push({
+                    date: new Date(i),
+                    value: 0
+                })
+                this.O3DayMean.push({
+                    date: new Date(i),
+                    value: 0
+                })
+                this.CODayMean.push({
+                    date: new Date(i),
+                    value: 0
+                })
+            }
         },
         mounted () {
             console.log('==============' + 'mounted' + '===================')
             RenderMap()
-        },
-        computed: {
         },
         methods: {
             // show: function () {
@@ -318,6 +380,7 @@
      */
     function RenderScatterPlot(target, time, year, month, day) {
         console.log('==============' + 'RenderScatterPlot' + '===================')
+
         const colorMap = [
             '#7FFF00',  // 0-50
             '#FFD700',  // 50-100
@@ -560,7 +623,10 @@
 
                     });
                 })
-                
+                .on('click', (event, d)=>{
+                    app.selectCity = d
+                    ReadHistoryData()
+                })
 
                 mainGroup.selectAll('text')
                 // .append('text')
@@ -601,12 +667,7 @@
                 // .text(function(d){
                 //     return d
                 // })
-                
-
             });
-
-            
-
         });
       
     }
@@ -621,14 +682,174 @@
       app.menuId = name;
     }
 
-    /**
-     * select the year
-     * @name SelectYear
-     * @param name<string>:the name of the selected year
+     /**
+     * read history data for scatter plot, box plot and line plot
+     * @name ReadHistoryData
+     * @param null
      * @return null
      */
-    function SelectYear(name) {
-        console.log('==============' + 'SelectYear' + '===================')
+    function ReadHistoryData(){
+        console.log("ReadHistoryData()", app.selectCity)
+        d3.csv('Data_v2/AQI_daymean.csv').then(data =>{
+            // console.log('AQI data', data)
+            for(var i = 0; i < app.AQIDayMean.length; i++){
+                app.AQIDayMean[i].value= data[i][app.selectCity]
+            }
+
+            d3.csv('Data_v2/PM2.5_daymean.csv').then(data =>{
+                for(var i = 0; i < app.PM25DayMean.length; i++){
+                    app.PM25DayMean[i].value= data[i][app.selectCity]
+                }
+
+                d3.csv('Data_v2/PM10_daymean.csv').then(data =>{
+                    for(var i = 0; i < app.PM10DayMean.length; i++){
+                        app.PM10DayMean[i].value= data[i][app.selectCity]
+                    }
+
+                    d3.csv('Data_v2/SO2_daymean.csv').then(data =>{
+                        for(var i = 0; i < app.SO2DayMean.length; i++){
+                            app.SO2DayMean[i].value= data[i][app.selectCity]
+                        }
+
+                        d3.csv('Data_v2/O3_daymean.csv').then(data =>{
+                            for(var i = 0; i < app.O3DayMean.length; i++){
+                                app.O3DayMean[i].value= data[i][app.selectCity]
+                            }
+
+                            d3.csv('Data_v2/CO_daymean.csv').then(data =>{
+                                for(var i = 0; i < app.CODayMean.length; i++){
+                                    app.CODayMean[i].value= data[i][app.selectCity]
+                                }
+
+                                ChangePlot()
+                            })
+                        })
+                    })
+                })
+            })
+        })
+
+        
+    }
+
+    /**
+     * change the plot category
+     * @name ChangePlot
+     * @param null
+     * @return null
+     */
+    function ChangePlot() {
+        console.log('==============' + 'ChangePlot' + '===================')
+        // draw AQI scatter plot
+        DrawScatterPlot('#plotAQISvg', 'AQI')
+        DrawScatterPlot('#plotPM25Svg', 'PM2.5')
+        DrawScatterPlot('#plotPM10Svg', 'PM10')
+        DrawScatterPlot('#plotSO2Svg', 'SO2')
+        DrawScatterPlot('#plotO3Svg', 'O3')
+        DrawScatterPlot('#plotCOSvg', 'CO')
+    }
+
+    function DrawScatterPlot(divid, target){
+        var targetData
+        var yLabel
+        var scaleDomain
+
+        switch (target) {
+            case 'AQI':
+                targetData = app.AQIDayMean
+                yLabel = target
+                scaleDomain = 500
+                break;
+            case 'PM2.5':
+                targetData = app.PM25DayMean
+                yLabel = target
+                scaleDomain = 400
+                break;
+            case 'PM10':
+                targetData = app.PM10DayMean
+                yLabel = target
+                scaleDomain = 550
+                break;
+            case 'SO2':
+                targetData = app.SO2DayMean
+                yLabel = target
+                scaleDomain = 120
+                break;
+            case 'O3':
+                targetData = app.O3DayMean
+                yLabel = target
+                scaleDomain = 150
+                break;
+            case 'CO':
+                targetData = app.CODayMean
+                yLabel = target
+                scaleDomain = 8
+                break;
+            default:
+                break;
+        }
+
+
+        const xValue = d => d.date;
+        const yValue = d => d.value;
+        
+        let xScale, yScale;
+        const xBarValue = (datum) => {return datum.date};
+        const yBarValue = (datum) => {return datum.value};
+        const xAxisLabel = 'date';
+        const yAxisLabel = yLabel;
+
+        let g = d3.select(divid);
+        var innerHeight = g.attr('height')
+        var innerWidth = g.attr('width')
+
+        
+        xScale = d3.scaleTime()
+        .domain([new Date(2014, 3, 14), new Date(2021, 3, 19)])
+        .range([0, innerWidth-250]);
+        yScale = d3.scaleLinear()
+        .domain([0, scaleDomain].reverse())
+        .range([0, innerHeight-120]);
+
+        const xAxisMethod = d3.axisBottom(xScale);
+        const yAxisMethod = d3.axisLeft(yScale);
+        const xAxisGroup = g.append('g').call(xAxisMethod)
+              .attr('font-size', '1.3em')
+              .attr('font-weight', 'bold');
+        xAxisGroup.append('text')
+        .attr('font-size', '2em')
+        .attr('y', 60)
+        .attr('x', innerWidth / 2 - 100)
+        .attr('fill', '#504f4f')
+        .text(xAxisLabel)
+        .attr('text-anchor', 'middle') 
+
+        const yAxisGroup = g.append('g').call(yAxisMethod)
+              .attr('font-size', '1.3em')
+              .attr('font-weight', 'bold');
+        yAxisGroup.append('text')
+        .attr('font-size', '2em')
+        .attr('transform', `rotate(-90)`)
+        .attr('x', -(innerHeight - 100) / 2)
+        .attr('y', -70)
+        .attr('fill', '#504f4f')
+        .text(yAxisLabel)
+        .attr('text-anchor', 'middle') 
+        xAxisGroup.attr('transform', `translate(${200}, ${innerHeight-70})`);
+        yAxisGroup.attr('transform', `translate(${200}, ${50})`);
+
+        g.selectAll(".dot")
+        .data(targetData)
+        .enter().append("circle") // Uses the enter().append() method
+        .attr("class", "dot") // Assign a class for styling
+        .attr("cx", function(d, i) { 
+            return xScale(d.date) 
+        })
+        .attr("cy", function(d) { 
+            return yScale(d.value) 
+        })
+        .attr("r", 2)
+        .attr('transform', `translate(${200}, ${50})`);
     }
 
     /**
@@ -1110,7 +1331,7 @@
         margin-top: 20px;
       }
 
-      #content {
+      #content1 {
           display: flex;
       }
 
@@ -1141,6 +1362,16 @@
           margin-top: 20px;
           float: right;
       }
+
+      #content2 {
+          display: flex;
+      }
+
+      .plotSvg {
+          width: 1200px;
+          height: 300px;
+      }
+
 
   </style>
 

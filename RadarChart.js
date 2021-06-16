@@ -220,8 +220,6 @@ var RadarChart = {
 			const maxO3 = 100
 			const maxCO = 3
 
-			console.log('test', j)
-
 			switch (j.axis){
 				case 'AQI':
 					return (j.value * maxAQI).toFixed(4)
