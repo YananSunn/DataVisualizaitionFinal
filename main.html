@@ -269,6 +269,15 @@
         mapSvg.call(tip);
         tip.attr('class', 'd3-tip');
 
+        const zoom = d3.zoom()
+            .scaleExtent([1, 40])
+            .on("zoom", (event, d) => {
+                mainGroup.attr("transform", event.transform);
+            })
+
+        mapSvg.call(zoom);
+        mapSvg.call(zoom.transform, d3.zoomIdentity.translate(100, 100));
+
         d3.json('Data/china.json').then(async data => {
             //const projection = d3.geoNaturalEarth1();
             // const projection = d3.geoMercator();
@@ -280,26 +289,7 @@
                 .attr('d', path)
                 .attr('id', d => d.properties.name)
                 .on('mouseover', tip.show)
-                .on('mouseout', tip.hide);
-            
-            var zoom = d3.zoom()
-            .scaleExtent([0.1, 10]) // 鼠标缩放的距离, 范围
-            .on('start', () => { // zoom 事件发生前 将变小手
-                console.log('start')
-                mapSvg.style('cursor', 'pointer')
-            })
-            .on('zoom', (e) => {
-                console.log(e)
-                mapSvg.selectAll('rect').attr('transform',
-                    'translate(' + e.transform.x + ',' + e.transform.y + ') scale(' + e.transform.k + ')'
-                )
-            })
-            .on('end', () => {
-                mapSvg.style('cursor', 'default')
-            });
-
-            mapSvg.call(zoom).call(zoom.transform, d3.zoomIdentity.scale(1))
-            
+                .on('mouseout', tip.hide);            
         });
 
         // RenderScatterPlot('AQI', 'day', 2015, 5, 16)
