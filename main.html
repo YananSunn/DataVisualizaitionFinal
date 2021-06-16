@@ -8,6 +8,8 @@
     <link rel="stylesheet" type="text/css" href="http://unpkg.com/view-design/dist/styles/iview.css">
     <script type="text/javascript" src="http://vuejs.org/js/vue.min.js"></script>
     <script type="text/javascript" src="http://unpkg.com/view-design/dist/iview.min.js"></script>
+    <script src="ra2.js"></script>
+    <script src="RadarChart.js"></script>
 </head>
 <body>
 <div id="app">
@@ -30,63 +32,69 @@
             地域分布
         </Menu-Item>
     </i-menu>
-    <div v-show="menuId == '1'">
+    <div id="content" v-show="menuId == '1'">
         <div id="cardBox">
-            <Card class="timeSelection" >
-                <p slot="title">
-                    <Icon type="ios-film-outline"></Icon>
-                    注意事项
-                </p>
-                <ul>
-                    <div>
-                        <p>可查询时间范围为 2014年5月14日 至 2021年4月19日。</p>
-                        <br>
-                    </div>
-                </ul>
-            </Card>
-            <Card class="timeSelection" >
-                <p slot="title">
-                    <Icon type="ios-film-outline"></Icon>
-                    选择查询日期
-                </p>
-                <ul>
-                    <div>
-                        <p>您当前查询的时间为 {{queryTime}}。</p>
-                        <br>
-                        <i-select v-model="selectYear" placeholder="请选择年" clearable style="width:200px">
-                            <i-option v-for="item in yearList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
-                        </i-select>
-                        <i-select v-model="selectMonth" placeholder="请选择月" clearable style="width:200px">
-                            <i-option v-for="item in monthList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
-                        </i-select>
-                        <i-select v-model="selectDay" placeholder="请选择日" clearable style="width:200px">
-                            <i-option v-for="item in dayList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
-                        </i-select>
-                        <i-button @click="SubmitDate">展示</i-button>
-                        <Modal v-model="invalidDate" title="警告">您输入了不合法的日期，请重试</Modal>
-                        <Modal v-model="undefinedDate" title="警告">您未选择确定的日期</Modal>
-                    </div>
-                </ul>
-            </Card>
-            <Card class="timeSelection" >
-                <p slot="title">
-                    <Icon type="ios-film-outline"></Icon>
-                    选择查询指标
-                </p>
-                <ul>
-                    <div>
-                        <i-select v-model="selectTarget" placeholder="请选择指标" style="width:200px">
-                            <i-option v-for="item in targetList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
-                        </i-select>
-                        
-                        <!-- <i-button @click="SubmitDate">展示</i-button>
-                        <Modal v-model="invalidDate" title="警告">您输入了不合法的日期，请重试</Modal>
-                        <Modal v-model="undefinedDate" title="警告">您未选择确定的日期</Modal> -->
-                    </div>
-                </ul>
-            </Card>
+            <div class="cardDiv">
+                <Card class="timeSelection" >
+                    <p slot="title">
+                        <Icon type="ios-film-outline"></Icon>
+                        注意事项
+                    </p>
+                    <ul>
+                        <div>
+                            <p>可查询时间范围为 2014年5月14日 至 2021年4月19日。</p>
+                            <br>
+                        </div>
+                    </ul>
+                </Card>
+            </div>
+            <div class="cardDiv">
+                <Card class="timeSelection" >
+                    <p slot="title">
+                        <Icon type="ios-film-outline"></Icon>
+                        选择查询指标
+                    </p>
+                    <ul>
+                        <div>
+                            <i-select v-model="selectTarget" placeholder="请选择指标" style="width:200px">
+                                <i-option v-for="item in targetList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+                            </i-select>
+                            
+                            <!-- <i-button @click="SubmitDate">展示</i-button>
+                            <Modal v-model="invalidDate" title="警告">您输入了不合法的日期，请重试</Modal>
+                            <Modal v-model="undefinedDate" title="警告">您未选择确定的日期</Modal> -->
+                        </div>
+                    </ul>
+                </Card>
+            </div>
+            <div class="cardDiv2">
+                <Card class="timeSelection" >
+                    <p slot="title">
+                        <Icon type="ios-film-outline"></Icon>
+                        选择查询日期
+                    </p>
+                    <ul>
+                        <div>
+                            <p>您当前查询的时间为 {{queryTime}}。</p>
+                            <br>
+                            <i-select v-model="selectYear" placeholder="请选择年" clearable style="width:200px">
+                                <i-option v-for="item in yearList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+                            </i-select>
+                            <i-select v-model="selectMonth" placeholder="请选择月" clearable style="width:200px">
+                                <i-option v-for="item in monthList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+                            </i-select>
+                            <i-select v-model="selectDay" placeholder="请选择日" clearable style="width:200px">
+                                <i-option v-for="item in dayList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+                            </i-select>
+                            <i-button @click="SubmitDate">展示</i-button>
+                            <Modal v-model="invalidDate" title="警告">您输入了不合法的日期，请重试</Modal>
+                            <Modal v-model="undefinedDate" title="警告">您未选择确定的日期</Modal>
+                        </div>
+                    </ul>
+                </Card>
+            </div>
         </div>
-        <svg width="1400" height="700" id="mapSvg" class="svgs" style='display: block; margin: 0 auto;'></svg>
+        <svg width="1100" height="700" id="mapSvg" class="svgs" style='display: block; margin: 0 auto;'></svg>
     </div>
     <div v-show="menuId == '2'">
         <Radio-Group v-model="qualityRank" @on-change="ChangeQualityRank">
@@ -286,7 +294,7 @@
             })
 
         mapSvg.call(zoom);
-        mapSvg.call(zoom.transform, d3.zoomIdentity.translate(100, 100));
+        // mapSvg.call(zoom.transform, d3.zoomIdentity.translate(100, 100));
 
         d3.json('Data/china.json').then(async data => {
             //const projection = d3.geoNaturalEarth1();
@@ -322,6 +330,12 @@
             '#800000',  // 300+
         ]
 
+        const maxAQI = 300
+        const maxPM25 = 150
+        const maxPM10 = 300
+        const maxSO2 = 100
+        const maxO3 = 100
+        const maxCO = 3
 
 
         // console.log(target, time, year, month, day)
@@ -378,12 +392,6 @@
                 // console.log('targetValue', targetValue)
                 // console.log('cityName', cityName)
 
-
-                const changeColor = (event) => {
-                    d3.select(event.currentTarget)
-                    .attr('fill',  d3.interpolateRainbow(Math.random()))
-                }
-
                 mainGroup = d3.select('#mainGroup')
                 mainGroup.selectAll('#scatterCircle').remove()
                 mainGroup.selectAll('#scatterText').remove()
@@ -397,6 +405,7 @@
                 .attr('cy', function(d) {
                     return app.projection(d)[1]
                 })
+                .attr('id', 'scatterCircle')
                 .data(targetValue)
                 .attr('r', circleRadius/Math.sqrt(zoomScale))
                 .attr('display', function(d) {
@@ -441,6 +450,126 @@
                             return 'none';
                     }
                 })
+                .data(cityName)
+                .on('mouseover', (event, d) => {
+
+                    mapSvg = d3.select('#mapSvg')
+                    mapSvg.selectAll('#chart').remove()
+                    var radarChart = mapSvg.append('g')
+                    .attr('id', 'chart')
+                    .attr('transform', function(d){
+                        return `translate(${event.clientX - 300}, ${event.clientY - 160})`
+                    })
+                    .append("rect")
+                    .attr('width', '280')
+                    .attr('height', '280')
+                    .attr("fill", "#333333");
+
+                    // 584 397 -856 505
+                    // 424 107
+                    // transform="translate(1015, 200)"
+                    
+                    
+                    var AQIFilename = 'Data_v2/AQI_' + time + 'mean.csv'
+                    var AQIValue = 0
+                    d3.csv(AQIFilename).then(AQIData =>{
+                        // console.log("RadarPlot AQI", AQIData)
+                        var selectRow
+                        for(var i = 0; i < AQIData.length; i++){
+                            if(AQIData[i][''] == renderDate){
+                                selectRow = AQIData[i]
+                                break
+                            }
+                        }
+                        AQIValue = selectRow[d]
+
+                        var PM25Filename = 'Data_v2/PM2.5_' + time + 'mean.csv'
+                        var PM25Value = 0
+                        d3.csv(PM25Filename).then(PM25Data =>{
+                            // console.log("RadarPlot PM25", PM25Data)
+                            var selectRow
+                            for(var i = 0; i < PM25Data.length; i++){
+                                if(PM25Data[i][''] == renderDate){
+                                    selectRow = PM25Data[i]
+                                    break
+                                }
+                            }
+                            PM25Value = selectRow[d]
+
+                            var PM10Filename = 'Data_v2/PM10_' + time + 'mean.csv'
+                            var PM10Value = 0
+                            d3.csv(PM10Filename).then(PM10Data =>{
+                                // console.log("RadarPlot PM10", PM10Data)
+                                var selectRow
+                                for(var i = 0; i < PM10Data.length; i++){
+                                    if(PM10Data[i][''] == renderDate){
+                                        selectRow = PM10Data[i]
+                                        break
+                                    }
+                                }
+                                PM10Value = selectRow[d]
+
+                                var SO2Filename = 'Data_v2/SO2_' + time + 'mean.csv'
+                                var SO2Value = 0
+                                d3.csv(SO2Filename).then(SO2Data =>{
+                                    // console.log("RadarPlot SO2", SO2Data)
+                                    var selectRow
+                                    for(var i = 0; i < SO2Data.length; i++){
+                                        if(SO2Data[i][''] == renderDate){
+                                            selectRow = SO2Data[i]
+                                            break
+                                        }
+                                    }
+                                    SO2Value = selectRow[d]
+
+                                    var O3Filename = 'Data_v2/O3_' + time + 'mean.csv'
+                                    var O3Value = 0
+                                    d3.csv(O3Filename).then(O3Data =>{
+                                        // console.log("RadarPlot O3", O3Data)
+                                        var selectRow
+                                        for(var i = 0; i < O3Data.length; i++){
+                                            if(O3Data[i][''] == renderDate){
+                                                selectRow = O3Data[i]
+                                                break
+                                            }
+                                        }
+                                        O3Value = selectRow[d]
+
+                                        var COFilename = 'Data_v2/CO_' + time + 'mean.csv'
+                                        var COValue = 0
+                                        d3.csv(COFilename).then(COData =>{
+                                            // console.log("RadarPlot CO", COData)
+                                            var selectRow
+                                            for(var i = 0; i < COData.length; i++){
+                                                if(COData[i][''] == renderDate){
+                                                    selectRow = COData[i]
+                                                    break
+                                                }
+                                            }
+                                            COValue = selectRow[d]
+
+                                            // console.log("Value", AQIValue, PM25Value, PM10Value, SO2Value, O3Value, COValue)
+
+                                            var radarPlotData = []
+                                            radarPlotData.push(renderDate)
+                                            radarPlotData.push(AQIValue/maxAQI)
+                                            radarPlotData.push(PM25Value/maxPM25)
+                                            radarPlotData.push(PM10Value/maxPM10)
+                                            radarPlotData.push(SO2Value/maxSO2)
+                                            radarPlotData.push(O3Value/maxO3)
+                                            radarPlotData.push(COValue/maxCO)
+                                            
+                                            // console.log("render data", radarPlotData)
+                                            radar('#chart', 'type.csv', radarPlotData);
+                                        });
+                                    });
+                                });
+                            });
+                        });
+
+                    });
+
+                
 
                 mainGroup.selectAll('text')
                 // .append('text')
@@ -985,14 +1114,43 @@
 
   <style scoped>
       .timeSelection {
-        width:400px;
+        width:250px;
         margin-left: 20px;
         margin-top: 20px;
       }
 
-      #cardBox {
-        display: flex;
+      #content {
+          display: flex;
       }
+
+      #test {
+          display: block;
+      }
+
+      #cardBox {
+        display: inline;
+        width: 300px;
+      }
+
+      .cardDiv {
+          display: flex;
+          height: 150px;
+      }
+
+      .cardDiv2 {
+          display: flex;
+          height: 320px;
+      }
+
+      .ivu-select {
+          margin-bottom: 10px;
+      }
+
+      .ivu-btn {
+          margin-top: 20px;
+          float: right;
+      }
+
   </style>
 
 </body>
