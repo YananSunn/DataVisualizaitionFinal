@@ -308,9 +308,6 @@
                 .on('mouseover', tip.show)
                 .on('mouseout', tip.hide);            
         });
-
-        // RenderScatterPlot('AQI', 'day', 2015, 5, 16)
-
     }
 
     /**
@@ -452,7 +449,6 @@
                 })
                 .data(cityName)
                 .on('mouseover', (event, d) => {
-
                     mapSvg = d3.select('#mapSvg')
                     mapSvg.selectAll('#chart').remove()
                     var radarChart = mapSvg.append('g')
@@ -463,12 +459,7 @@
                     .append("rect")
                     .attr('width', '280')
                     .attr('height', '280')
-                    .attr("fill", "#333333");
-
-                    // 584 397 -856 505
-                    // 424 107
-                    // transform="translate(1015, 200)"
-                    
+                    .attr("fill", "#333333");           
                     
                     var AQIFilename = 'Data_v2/AQI_' + time + 'mean.csv'
                     var AQIValue = 0
@@ -568,7 +559,7 @@
                         });
 
                     });
-
+                })
                 
 
                 mainGroup.selectAll('text')
