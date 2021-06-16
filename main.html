@@ -248,6 +248,12 @@
     })
 
     const circleRadius = 7
+    var zoomScale = 1
+    var myTarget
+    var myTime = ''
+    var myYear
+    var myMonth
+    var myDay
 
     /**
      * render the map in the first part
@@ -270,9 +276,13 @@
         tip.attr('class', 'd3-tip');
 
         const zoom = d3.zoom()
-            .scaleExtent([1, 40])
+            .scaleExtent([1, 20])
             .on("zoom", (event, d) => {
                 mainGroup.attr("transform", event.transform);
+                zoomScale = event.transform.k;
+                console.log(zoomScale);
+                if (myTime != '')
+                    RenderScatterPlot(myTarget, myTime, myYear, myMonth, myDay)
             })
 
         mapSvg.call(zoom);
@@ -280,10 +290,9 @@
 
         d3.json('Data/china.json').then(async data => {
             //const projection = d3.geoNaturalEarth1();
-            // const projection = d3.geoMercator();
+            //const projection = d3.geoMercator();
             app.projection.fitSize([innerWidth, innerHeight], data);
             const path = d3.geoPath().projection(app.projection);
-            console.log(path(data.features))
             mainGroup.selectAll('path').data(data.features).join('path')
                 .attr('stroke', 'white').attr('fill', 'green')
                 .attr('d', path)
@@ -348,6 +357,7 @@
             var locations = []
             var targetValue = []
             var cityName = []
+            var cityRate = []
             
             d3.csv('Data/citynamewithlocation.csv').then(locationData =>{
                 // console.log('locationData', locationData)
@@ -359,13 +369,14 @@
                             locations.push(loc)
                             targetValue.push(parseFloat(renderData[key]))
                             cityName.push(key)
+                            cityRate.push(e.Rate)
                         }
                     })
                 }
 
-                console.log('locations', locations)
+                // console.log('locations', locations)
                 // console.log('targetValue', targetValue)
-                console.log('cityName', cityName)
+                // console.log('cityName', cityName)
 
 
                 const changeColor = (event) => {
@@ -387,7 +398,7 @@
                     return app.projection(d)[1]
                 })
                 .data(targetValue)
-                .attr('r', circleRadius)
+                .attr('r', circleRadius/Math.sqrt(zoomScale))
                 .attr('display', function(d) {
                     if(d == -1) {
                         return 'none'
@@ -417,16 +428,28 @@
                     }
                 })
                 .attr('id', 'scatterCircle')
-                .on('mouseover', changeColor)
+                .data(cityRate)
+                .attr('display', function(d) {
+                    if(zoomScale < 4)
+                    {
+                        if (d == 2 || d == 3)
+                            return 'none';
+                    }
+                    else if(zoomScale < 8)
+                    {
+                        if (d == 3)
+                            return 'none';
+                    }
+                })
 
                 mainGroup.selectAll('text')
                 // .append('text')
                 .data(locations)
                 .enter().append('text')
-                .attr('font-size', '0.8em')
+                .attr('font-size', 0.8/Math.sqrt(zoomScale)+'em')
                 .attr('fill', '#FFFFFFF')
                 .attr('transform', function(d){
-                    return `translate(${app.projection(d)[0] - circleRadius}, ${app.projection(d)[1] + circleRadius})`
+                    return `translate(${app.projection(d)[0] - circleRadius/Math.sqrt(zoomScale)}, ${app.projection(d)[1] + circleRadius/Math.sqrt(zoomScale)})`
                 })
                 .data(targetValue)
                 .attr('display', function(d) {
@@ -441,6 +464,19 @@
                     return d.toFixed(0)
                 })
                 .attr('id', 'scatterText')
+                .data(cityRate)
+                .attr('display', function(d) {
+                    if(zoomScale < 4)
+                    {
+                        if (d == 2 || d == 3)
+                            return 'none';
+                    }
+                    else if(zoomScale < 8)
+                    {
+                        if (d == 3)
+                            return 'none';
+                    }
+                })
                 // .data(cityName)
                 // .text(function(d){
                 //     return d
@@ -485,11 +521,11 @@
         console.log('==============' + 'SubmitDate' + '===================')
         console.log(app.selectYear, app.selectMonth, app.selectDay)
 
-        app.queryTime = "xxx"
         var validYear = app.selectYear != "" && app.selectYear != undefined
-        var validMonth = app.selectMonth != "" && app.selectMonth != undefined
+        validMonth = app.selectMonth != "" && app.selectMonth != undefined
         var validDay = app.selectDay != "" && app.selectDay != undefined
-
+        app.queryTime = "xxx"
+        
         if(validYear != true){
             app.undefinedDate = true
         }
@@ -563,13 +599,20 @@
         // render the scatter map
         if(validDay == true){
             RenderScatterPlot(app.selectTarget, 'day', app.selectYear, app.selectMonth, app.selectDay)
+            myTime = 'day'
         }
         else if(validMonth == true){
             RenderScatterPlot(app.selectTarget, 'month', app.selectYear, app.selectMonth, app.selectDay)
+            myTime = 'month'
         }
         else{
             RenderScatterPlot(app.selectTarget, 'year', app.selectYear, app.selectMonth, app.selectDay)
+            myTime = 'year'
         }
+        myTarget = app.selectTarget
+        myYear = app.selectYear
+        myMonth = app.selectMonth
+        myDay = app.selectDay
     }
 
     /**
