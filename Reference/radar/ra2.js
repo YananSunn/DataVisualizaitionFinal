@@ -1,29 +1,31 @@
-function radar(divid,csv_type,csv_data){
+function radar(divid,csv_type,test_data){
 //var divid='#chart'
 var w = 190,
 	h = 190;
 var colorscale = d3.scale.category10();
 var dd=[];
-var LegendOptions =[];//['中石油','神华','中航信','中山'];
+var LegendOptions =[];
 var type=[];
 d3.csv(csv_type,function(ty){//'type.csv'
+	console.log("ty", ty)
 
 	ty.forEach(function(ty_d){
 			type.push(ty_d.typename);
 		});	
 
-	d3.csv(csv_data,function(data){	//'data.csv'	
-		data.forEach(function(d){
-			LegendOptions.push(d.company);	
-			var tmp=[
-				{axis:type[0],value:d.type1},
-				{axis:type[1],value:d.type2},
-				{axis:type[2],value:d.type3},
-				{axis:type[3],value:d.type4},
-				{axis:type[4],value:d.type5},
-			  ];
-			dd.push(tmp);
-		});
+	console.log(test_data)
+
+		LegendOptions.push(test_data[0]);
+		var tmp2=[
+			{axis:type[0],value:test_data[1]},
+			{axis:type[1],value:test_data[2]},
+			{axis:type[2],value:test_data[3]},
+			{axis:type[3],value:test_data[4]},
+			{axis:type[4],value:test_data[5]},
+			{axis:type[5],value:test_data[6]},
+			];
+		console.log("tmp2", tmp2)
+		dd.push(tmp2);
 	
 	//Options for the Radar chart, other than default
 	var mycfg = {
@@ -87,6 +89,5 @@ var legend = svg.append("g")
 	  .attr("fill", "#aaa")
 	  .text(function(d) { return d; })
 	  ;	
-	});
 });
 }
