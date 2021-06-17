@@ -1,5 +1,5 @@
 function radar(divid, csv_type, test_data, city_name){
-var w = 150, h = 150;
+var w = 100, h = 100;
 var colorscale = d3.scaleOrdinal(d3.schemeCategory10);
 var dd = [];
 var LegendOptions = [];
@@ -48,26 +48,26 @@ var svg = d3.select(divid)
 //Create the title for the legend
 var text = svg.append("text")
 .attr("class", "title")
-.attr('transform', 'translate(120,20)') 
-.attr("x", w - 70)
+.attr('transform', 'translate(110,10)') 
+.attr("x", w - 105)
 .attr("y", 10)
 .attr("font-size", "12px")
-.attr("fill", "#ddd")
+.attr("fill", "#515a6e")
 .text(city_name);
 	
 //Initiate Legend	
 var legend = svg.append("g")
 .attr("class", "legend")
-.attr("height", 100)
-.attr("width", 200)
-.attr('transform', 'translate(120,40)') 
+.attr("height", 50)
+.attr("width", 100)
+.attr('transform', 'translate(110,25)') 
 
 //Create colour squares
 legend.selectAll('rect')
   .data(LegendOptions)
   .enter()
   .append("rect")
-  .attr("x", w - 65)
+  .attr("x", w - 105)
   .attr("y", function(d, i){ return i * 20;})
   .attr("width", 10)
   .attr("height", 10)
@@ -78,10 +78,10 @@ legend.selectAll('text')
   .data(LegendOptions)
   .enter()
   .append("text")
-  .attr("x", w - 52)
+  .attr("x", w - 92)
   .attr("y", function(d, i){ return i * 20 + 9;})
   .attr("font-size", "11px")
-  .attr("fill", "#aaa")
+  .attr("fill", "#515a6e")
   .text(function(d) { return d; })
   ;
 })

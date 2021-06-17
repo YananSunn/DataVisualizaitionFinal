@@ -11,7 +11,7 @@
 var RadarChart = {
   draw: function(id, d, options){
   var cfg = {
-	 radius: 5,
+	 radius: 3,
 	 w: 300,
 	 h: 300,
 	 factor: 1,
@@ -21,8 +21,8 @@ var RadarChart = {
 	 radians: 2 * Math.PI,
 	 opacityArea: 0.5,
 	 ToRight: 5,
-	 TranslateX: 60,
-	 TranslateY: 80,
+	 TranslateX: 40,
+	 TranslateY: 50,
 	 ExtraWidthX: 100,
 	 ExtraWidthY: 200,
 	 color: d3.scaleOrdinal(d3.schemeCategory10)
@@ -49,8 +49,8 @@ var RadarChart = {
 			.attr('id', 'radarTestsvg')
 			.append("g")
 			.attr("transform", "translate(" + cfg.TranslateX + "," + cfg.TranslateY + ")")
-			.attr('id', 'radarTestg')			;
-
+			.attr('id', 'radarTestg')	
+			
 	var tooltip;
 	
 	//Circular segments
@@ -65,7 +65,7 @@ var RadarChart = {
 	   .attr("x2", function(d, i){return levelFactor*(1-cfg.factor*Math.sin((i+1)*cfg.radians/total));})
 	   .attr("y2", function(d, i){return levelFactor*(1-cfg.factor*Math.cos((i+1)*cfg.radians/total));})
 	   .attr("class", "line")
-	   .style("stroke", "#bbb")
+	   .style("stroke", "#515a6e")
 	   .style("stroke-opacity", "0.75")
 	   .style("stroke-width", "1px")
 	   .attr("transform", "translate(" + (cfg.w/2-levelFactor) + ", " + (cfg.h/2-levelFactor) + ")");
@@ -102,7 +102,7 @@ var RadarChart = {
 		.attr("x2", function(d, i){return cfg.w/2*(1-cfg.factor*Math.sin(i*cfg.radians/total));})
 		.attr("y2", function(d, i){return cfg.h/2*(1-cfg.factor*Math.cos(i*cfg.radians/total));})
 		.attr("class", "line")
-		.style("stroke", "#fff")
+		.style("stroke", "#515a6e")
 		.style("stroke-width", "1px");
 
 	axis.append("text")
@@ -112,10 +112,10 @@ var RadarChart = {
 		.style("font-size", "11px")
 		.attr("text-anchor", "middle")
 		.attr("dy", "1.5em")
-		.attr('fill','#ddd')
+		.attr('fill','#515a6e')
 		.attr("transform", function(d, i){return "translate(0, -10)"})
-		.attr("x", function(d, i){return cfg.w/2*(1-cfg.factorLegend*Math.sin(i*cfg.radians/total))-60*Math.sin(i*cfg.radians/total);})
-		.attr("y", function(d, i){return cfg.h/2*(1-Math.cos(i*cfg.radians/total))-20*Math.cos(i*cfg.radians/total);});
+		.attr("x", function(d, i){return cfg.w/2*(1-cfg.factorLegend*Math.sin(i*cfg.radians/total))-30*Math.sin(i*cfg.radians/total);})
+		.attr("y", function(d, i){return cfg.h/2*(1-Math.cos(i*cfg.radians/total))-10*Math.cos(i*cfg.radians/total);});
 
  
 	d.forEach(function(y, x){

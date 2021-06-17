@@ -98,6 +98,7 @@
                 </Card>
             </div>
         </div>
+        <!-- <svg id="chart" class="svgs" style='display: block; margin: 0 auto;'></svg> -->
         <svg width="1100" height="700" id="mapSvg" class="svgs" style='display: block; margin: 0 auto;'></svg>
     </div>
     <div id="content2" v-show="menuId == '2'">
@@ -349,6 +350,9 @@
     var myMonth
     var myDay
 
+    const mapColors = d3.scaleOrdinal(d3.schemeBlues[9])
+    console.log('color', mapColors)
+
     /**
      * render the map in the first part
      * @name RenderMap
@@ -388,12 +392,26 @@
             app.projection.fitSize([innerWidth, innerHeight], data);
             const path = d3.geoPath().projection(app.projection);
             mainGroup.selectAll('path').data(data.features).join('path')
-                .attr('stroke', 'white').attr('fill', 'green')
+                .attr('stroke', 'white')
+                .attr('fill', function(d, i){
+                    // return mapColors[i]
+                    var index = (i%8)+2
+                    if(i == 0){
+                        mapColors(0)
+                    }
+                    else if(i == 8){
+                        mapColors(8)
+                    }
+                    return mapColors(index)
+                })
+                .attr('opacity', 0.8)
                 .attr('d', path)
                 .attr('id', d => d.properties.name)
                 .on('mouseover', tip.show)
                 .on('mouseout', tip.hide);            
         });
+
+        radar('#chart', 'type.csv', ['20200714', 0.5, 0.6, 0.9, 0.3, 0.4, 0.5], 'syn爱的小屋');
     }
 
     /**
@@ -405,13 +423,21 @@
     function RenderScatterPlot(target, time, year, month, day) {
         console.log('==============' + 'RenderScatterPlot' + '===================')
 
+        // const colorMap = [
+        //     '#7FFF00',  // 0-50
+        //     '#FFD700',  // 50-100
+        //     '#FF8C00',  // 100-150
+        //     '#FF0000',  // 150-200
+        //     '#B22222',  // 200-300
+        //     '#800000',  // 300+
+        // ]
         const colorMap = [
-            '#7FFF00',  // 0-50
-            '#FFD700',  // 50-100
-            '#FF8C00',  // 100-150
-            '#FF0000',  // 150-200
-            '#B22222',  // 200-300
-            '#800000',  // 300+
+            '#9BE441',  // 0-50
+            '#FACF39',  // 50-100
+            '#F89049',  // 100-150
+            '#FF5555',  // 150-200
+            '#A264BF',  // 200-300
+            '#75365A',  // 300+
         ]
 
         const rangeMap = [
@@ -425,13 +451,13 @@
                 50, 100, 150, 200, 300
             ],
             [ // SO2
-                10, 20, 30, 40, 50
+                10, 30, 50, 70, 90
             ],
             [ // O3
                 20, 40, 60, 80, 120,
             ],
             [ // CO
-                0.5, 1, 1.5, 2, 3
+                0.5, 1, 2, 3, 4
             ]
         ]
 
@@ -511,7 +537,7 @@
                 .attr('cy', function(d) {
                     return app.projection(d)[1]
                 })
-                .attr('opacity', 0.9)
+                .attr('opacity', 0.85)
                 .attr('id', 'scatterCircle')
                 .data(targetValue)
                 .attr('display', function(d) {
@@ -528,10 +554,10 @@
                 })
                 .attr('r', function(d){
                     if(zoomScale < 2){
-                        return (circleRadius/2)/Math.sqrt(zoomScale)
+                        return (circleRadius*3/4)/Math.sqrt(zoomScale)
                     }
                     else if(zoomScale < 4){
-                        return (circleRadius*3/4)/Math.sqrt(zoomScale)
+                        return (circleRadius*7/8)/Math.sqrt(zoomScale)
                     }
                     else{
                         return circleRadius/Math.sqrt(zoomScale)
@@ -592,9 +618,12 @@
                         return `translate(${event.clientX - 300}, ${event.clientY - 160})`
                     })
                     .append("rect")
-                    .attr('width', '280')
-                    .attr('height', '280')
-                    .attr("fill", "#333333");           
+                    .attr('width', '180')
+                    .attr('height', '180')
+                    .attr("rx", 50)
+                    // .attr("fill", "#deebf7")
+                    .attr("fill", "white")
+                    .attr('opacity', 0.8);           
                     
                     var AQIFilename = 'Data_v2/AQI_' + time + 'mean.csv'
                     var AQIValue = 0
@@ -859,7 +888,7 @@
         var yLabel
         var scaleDomain
         const domainRange = [
-            [500, 500, 700, 150, 200, 10],
+            [520, 500, 700, 150, 200, 10],
             [400, 300, 300, 100, 150, 5]
         ]
         var domainRangeIndex
@@ -1480,7 +1509,7 @@
 
       .cardDiv2 {
           display: flex;
-          height: 320px;
+          height: 360px;
       }
 
       .ivu-select {
