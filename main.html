@@ -105,6 +105,10 @@
             <Radio label="散点图/折线图"></Radio>
             <Radio label="箱线图"></Radio>
         </Radio-Group>
+        <Radio-Group v-model="selectScale" @on-change="ChangePlot">
+            <Radio label="全局"></Radio>
+            <Radio label="部分"></Radio>
+        </Radio-Group>
         <div id="plots">
             <div id="plotAQI">
                 <svg class="plotSvg" width="1200" height="300" id="plotAQISvg" class="svgs"></svg>
@@ -207,6 +211,7 @@
             ],
 
             selectPlot: '散点图/折线图',
+            selectScale: '全局',
             selectCity: '北京',
             AQIDayMean: [],
             PM25DayMean: [],
@@ -409,6 +414,27 @@
             '#800000',  // 300+
         ]
 
+        const rangeMap = [
+            [ // AQI
+                50, 100, 150, 200, 300
+            ],
+            [ // PM2.5
+                20, 50, 80, 120, 150
+            ],
+            [ // PM10
+                50, 100, 150, 200, 300
+            ],
+            [ // SO2
+                10, 20, 30, 40, 50
+            ],
+            [ // O3
+                20, 40, 60, 80, 120,
+            ],
+            [ // CO
+                0.5, 1, 1.5, 2, 3
+            ]
+        ]
+
         const maxAQI = 300
         const maxPM25 = 150
         const maxPM10 = 300
@@ -450,7 +476,6 @@
             var locations = []
             var targetValue = []
             var cityName = []
-            var cityRate = []
             
             d3.csv('Data/citynamewithlocation.csv').then(locationData =>{
                 // console.log('locationData', locationData)
@@ -460,9 +485,11 @@
                             // console.log('find city', e)
                             var loc = new Array(parseFloat(e.Longtitude), parseFloat(e.Latitude))
                             locations.push(loc)
-                            targetValue.push(parseFloat(renderData[key]))
+                            targetValue.push({
+                                value: parseFloat(renderData[key]),
+                                rate: e.Rate
+                            })
                             cityName.push(key)
-                            cityRate.push(e.Rate)
                         }
                     })
                 }
@@ -484,51 +511,77 @@
                 .attr('cy', function(d) {
                     return app.projection(d)[1]
                 })
+                .attr('opacity', 0.9)
                 .attr('id', 'scatterCircle')
                 .data(targetValue)
-                .attr('r', circleRadius/Math.sqrt(zoomScale))
                 .attr('display', function(d) {
-                    if(d == -1) {
+                    if(d.value == -1) {
                         return 'none'
                     }
                     else {
-                        return 'block'
+                        if(zoomScale < 8)
+                        {
+                            if (d.rate == 3)
+                                return 'none';
+                        }
+                    }
+                })
+                .attr('r', function(d){
+                    if(zoomScale < 2){
+                        return (circleRadius/2)/Math.sqrt(zoomScale)
+                    }
+                    else if(zoomScale < 4){
+                        return (circleRadius*3/4)/Math.sqrt(zoomScale)
+                    }
+                    else{
+                        return circleRadius/Math.sqrt(zoomScale)
                     }
                 })
                 .attr('fill', function(d) {
-                    if(d < 50){
+                    var rangeMapIndex
+                    switch (target) {
+                        case 'AQI':
+                            rangeMapIndex = 0
+                            break;
+                        case 'PM2.5':
+                            rangeMapIndex = 1
+                            break;
+                        case 'PM10':
+                            rangeMapIndex = 2
+                            break;
+                        case 'SO2':
+                            rangeMapIndex = 3
+                            break;
+                        case 'O3':
+                            rangeMapIndex = 4
+                            break;
+                        case 'CO':
+                            rangeMapIndex = 5
+                            break;
+                        default:
+                            break;
+                    }
+                    if(d.value < rangeMap[rangeMapIndex][0]){
                         return colorMap[0]
                     }
-                    else if(d < 100){
+                    else if(d.value < rangeMap[rangeMapIndex][1]){
                         return colorMap[1]
                     }
-                    else if(d < 150){
+                    else if(d.value < rangeMap[rangeMapIndex][2]){
                         return colorMap[2]
                     }
-                    else if(d < 200){
+                    else if(d.value < rangeMap[rangeMapIndex][3]){
                         return colorMap[3]
                     }
-                    else if(d < 300){
+                    else if(d.value < rangeMap[rangeMapIndex][4]){
                         return colorMap[4]
                     }
                     else {
                         return colorMap[5]
                     }
                 })
-                .attr('id', 'scatterCircle')
-                .data(cityRate)
-                .attr('display', function(d) {
-                    if(zoomScale < 4)
-                    {
-                        if (d == 2 || d == 3)
-                            return 'none';
-                    }
-                    else if(zoomScale < 8)
-                    {
-                        if (d == 3)
-                            return 'none';
-                    }
-                })
+                .attr('stroke', 'black')
+                .attr('stroke-width', 0.2)
                 .data(cityName)
                 .on('mouseover', (event, d) => {
                     mapSvg = d3.select('#mapSvg')
@@ -633,7 +686,7 @@
                                             radarPlotData.push(COValue/maxCO)
                                             
                                             // console.log("render data", radarPlotData)
-                                            radar('#chart', 'type.csv', radarPlotData);
+                                            radar('#chart', 'type.csv', radarPlotData, d);
                                         });
                                     });
                                 });
@@ -647,47 +700,65 @@
                     ReadHistoryData()
                     app.menuId = '2'
                     app.handleSpinCustom()
-                })
+                })                
+                
 
                 mainGroup.selectAll('text')
-                // .append('text')
                 .data(locations)
-                .enter().append('text')
-                .attr('font-size', 0.8/Math.sqrt(zoomScale)+'em')
+                .enter()
+                .append('text')
+                .attr('font-size', 0.55/Math.sqrt(zoomScale)+'em')
                 .attr('fill', '#FFFFFFF')
+                .attr('text-anchor', 'middle')
                 .attr('transform', function(d){
-                    return `translate(${app.projection(d)[0] - circleRadius/Math.sqrt(zoomScale)}, ${app.projection(d)[1] + circleRadius/Math.sqrt(zoomScale)})`
+                    return `translate(${app.projection(d)[0] - (circleRadius/Math.sqrt(zoomScale))*1/16}, ${app.projection(d)[1] + (circleRadius/Math.sqrt(zoomScale))*7/16})`
                 })
+                .attr('id', 'scatterText')
                 .data(targetValue)
                 .attr('display', function(d) {
-                    if(d == -1) {
+                    if(d.value == -1) {
                         return 'none'
                     }
                     else {
-                        return 'block'
+                        if(zoomScale < 4)
+                        {
+                            return 'none';
+                        }
+                        else if(zoomScale < 8)
+                        {
+                            if (d.rate == 3)
+                                return 'none';
+                        }
+                        else {
+                            return 'flex'
+                        }
                     }
                 })
+                .attr('disabled', true)
                 .text(function(d){
-                    return d.toFixed(0)
-                })
-                .attr('id', 'scatterText')
-                .data(cityRate)
-                .attr('display', function(d) {
-                    if(zoomScale < 4)
-                    {
-                        if (d == 2 || d == 3)
-                            return 'none';
+                    switch (target) {
+                        case 'AQI':
+                            return d.value.toFixed(0)
+                            break;
+                        case 'PM2.5':
+                            return d.value.toFixed(0)   
+                            break;
+                        case 'PM10':
+                            return d.value.toFixed(0)
+                            break;
+                        case 'SO2':
+                            return d.value.toFixed(0)
+                            break;
+                        case 'O3':
+                            return d.value.toFixed(0)
+                            break;
+                        case 'CO':
+                            return d.value.toFixed(1)
+                            break;
+                        default:
+                            break;
                     }
-                    else if(zoomScale < 8)
-                    {
-                        if (d == 3)
-                            return 'none';
-                    }
                 })
-                // .data(cityName)
-                // .text(function(d){
-                //     return d
-                // })
             });
         });
       
@@ -762,7 +833,7 @@
     function ChangePlot() {
         console.log('==============' + 'ChangePlot' + '===================')
         if(app.selectPlot == '散点图/折线图'){
-
+            d3.selectAll('.plotg').remove()
             // draw scatter plot
             DrawScatterPlot('#plotAQISvg', 'AQI')
             DrawScatterPlot('#plotPM25Svg', 'PM2.5')
@@ -787,37 +858,52 @@
         var targetData
         var yLabel
         var scaleDomain
+        const domainRange = [
+            [500, 500, 700, 150, 200, 10],
+            [400, 300, 300, 100, 150, 5]
+        ]
+        var domainRangeIndex
+        switch (app.selectScale) {
+            case '全局':
+                domainRangeIndex = 0
+                break;
+            case '部分':
+                domainRangeIndex = 1
+                break;
+            default:
+                break;
+        }
 
         switch (target) {
             case 'AQI':
                 targetData = app.AQIDayMean
                 yLabel = target
-                scaleDomain = 500
+                scaleDomain = domainRange[domainRangeIndex][0]
                 break;
             case 'PM2.5':
                 targetData = app.PM25DayMean
                 yLabel = target
-                scaleDomain = 400
+                scaleDomain = domainRange[domainRangeIndex][1]
                 break;
             case 'PM10':
                 targetData = app.PM10DayMean
                 yLabel = target
-                scaleDomain = 550
+                scaleDomain = domainRange[domainRangeIndex][2]
                 break;
             case 'SO2':
                 targetData = app.SO2DayMean
                 yLabel = target
-                scaleDomain = 120
+                scaleDomain = domainRange[domainRangeIndex][3]
                 break;
             case 'O3':
                 targetData = app.O3DayMean
                 yLabel = target
-                scaleDomain = 150
+                scaleDomain = domainRange[domainRangeIndex][4]
                 break;
             case 'CO':
                 targetData = app.CODayMean
                 yLabel = target
-                scaleDomain = 8
+                scaleDomain = domainRange[domainRangeIndex][5]
                 break;
             default:
                 break;
@@ -842,7 +928,7 @@
 
         
         xScale = d3.scaleTime()
-        .domain([new Date(2014, 4, 14), new Date(2021, 3, 19)])
+        .domain([new Date(2014, 3, 14), new Date(2021, 4, 19)])
         .range([0, innerWidth-250]);
         yScale = d3.scaleLinear()
         .domain([0, scaleDomain].reverse())
@@ -886,7 +972,13 @@
             return yScale(d.value) 
         })
         .attr("r", 2)
-        .attr('transform', `translate(${200}, ${50})`);
+        .attr('transform', `translate(${200}, ${50})`)
+        .attr('display', function(d){
+            if(d.value == -1.0){
+                return 'none'
+            }
+            return 'block'
+        })
     }
 
     /**
@@ -1269,12 +1361,12 @@
 
                     d3.select('#date_text').text(String(c)+'年');
 
-                    
                     g.selectAll('.rect-barchart')
                     .data(gamesales, data => data.platform)
                     .join('rect')
                     .transition(transition)
                     .attr('id', function(d){
+                        console.log('id', d.platform)
                         return d.platform;
                     })
                     .attr('value', function(d){

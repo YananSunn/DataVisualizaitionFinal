@@ -1,4 +1,4 @@
-function radar(divid, csv_type, test_data){
+function radar(divid, csv_type, test_data, city_name){
 var w = 150, h = 150;
 var colorscale = d3.scaleOrdinal(d3.schemeCategory10);
 var dd = [];
@@ -53,7 +53,7 @@ var text = svg.append("text")
 .attr("y", 10)
 .attr("font-size", "12px")
 .attr("fill", "#ddd")
-.text("当前日期");
+.text(city_name);
 	
 //Initiate Legend	
 var legend = svg.append("g")
