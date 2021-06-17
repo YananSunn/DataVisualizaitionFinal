@@ -190,6 +190,7 @@ var RadarChart = {
 					tooltip
 						.attr('x', newX)
 						.attr('y', newY)
+						.attr('fill','black')
 						.text(d.value.toFixed(2))
 						.transition(200)
 						.style('opacity', 1);
@@ -222,21 +223,22 @@ var RadarChart = {
 
 			switch (j.axis){
 				case 'AQI':
-					return (j.value * maxAQI).toFixed(4)
+					return "实际值 " + (j.value * maxAQI).toFixed(4)
 				case 'PM2.5':
-					return (j.value * maxPM25).toFixed(4)
+					return "实际值 " + (j.value * maxPM25).toFixed(4)
 				case 'PM10':
-					return (j.value * maxPM10).toFixed(4)
+					return "实际值 " + (j.value * maxPM10).toFixed(4)
 				case 'SO2':
-					return (j.value * maxSO2).toFixed(4)
+					return "实际值 " + (j.value * maxSO2).toFixed(4)
 				case 'O3':
-					return (j.value * maxO3).toFixed(4)
+					return "实际值 " + (j.value * maxO3).toFixed(4)
 				case 'CO':
-					return (j.value * maxCO).toFixed(4)
+					return "实际值 " + (j.value * maxCO).toFixed(4)
 			}
 			
-			return j.value
-		});
+			return "实际值" + j.value
+		})
+		.attr('fill','#515a6e')
 
 	  series++;
 	});

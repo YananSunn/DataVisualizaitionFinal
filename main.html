@@ -13,7 +13,6 @@
 </head>
 <body>
 <div id="app">
-    
     <i-menu mode="horizontal" :theme="theme1" active-name="1" @on-select="ChangeMenu">
         <Menu-Item name="1">
             <Icon type="ios-paper"></Icon>
@@ -37,7 +36,7 @@
         </Menu-Item>
     </i-menu>
     <div id="content1" v-show="menuId == '1'">
-        <div id="cardBox">
+        <div class="cardBox">
             <div class="cardDiv">
                 <Card class="timeSelection" >
                     <p slot="title">
@@ -79,7 +78,7 @@
                     </p>
                     <ul>
                         <div>
-                            <p>您当前查询的时间为 {{queryTime}}。</p>
+                            <p>您当前查询的时间为 <b>{{queryTime}}</b>。</p>
                             <br>
                             <i-select v-model="selectYear" placeholder="请选择年" clearable style="width:200px">
                                 <i-option v-for="item in yearList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
@@ -98,18 +97,61 @@
                 </Card>
             </div>
         </div>
-        <!-- <svg id="chart" class="svgs" style='display: block; margin: 0 auto;'></svg> -->
-        <svg width="1100" height="700" id="mapSvg" class="svgs" style='display: block; margin: 0 auto;'></svg>
+        <svg width="1000" height="700" id="mapSvg" class="svgs" style='display: block;'></svg>
+        <i-button id="closeRadar" type="info" shape="circle" size="middle" v-show="closeRadar" @click="CloseRadarPlot">
+            <p>关闭雷达图</p>
+        </i-button>
     </div>
     <div id="content2" v-show="menuId == '2'">
-        <Radio-Group v-model="selectPlot" @on-change="ChangePlot">
-            <Radio label="散点图/折线图"></Radio>
-            <Radio label="箱线图"></Radio>
-        </Radio-Group>
-        <Radio-Group v-model="selectScale" @on-change="ChangePlot">
-            <Radio label="全局"></Radio>
-            <Radio label="部分"></Radio>
-        </Radio-Group>
+        <div class="cardBox">
+            <div class="cardDiv">
+                <Card class="plotSelection" >
+                    <p slot="title">
+                        <Icon type="ios-film-outline"></Icon>
+                        提示
+                    </p>
+                    <ul>
+                        <div>
+                            <p>当前显示的城市为<b>{{selectCity}}</b>。</p>
+                            <br>
+                        </div>
+                    </ul>
+                </Card>
+            </div>
+            <div class="cardDiv">
+                <Card class="plotSelection" >
+                    <p slot="title">
+                        <Icon type="ios-film-outline"></Icon>
+                        选择展示的图
+                    </p>
+                    <ul>
+                        <div>
+                            <Radio-Group v-model="selectPlot" @on-change="ChangePlot">
+                                <Radio label="散点图/折线图"></Radio>
+                                <Radio label="箱线图"></Radio>
+                            </Radio-Group>
+                        </div>
+                    </ul>
+                </Card>
+            </div>
+            <div class="cardDiv" v-show="showScaleCard">
+                <Card class="plotSelection" >
+                    <p slot="title">
+                        <Icon type="ios-film-outline"></Icon>
+                        选择散点图的展示规模
+                    </p>
+                    <ul>
+                        <div>
+                            <Radio-Group v-model="selectScale" @on-change="ChangePlot">
+                                <Radio label="全局"></Radio>
+                                <Radio label="局部"></Radio>
+                            </Radio-Group>
+                        </div>
+                    </ul>
+                </Card>
+            </div>
+         </div>
+        
         <div id="plots">
             <div id="plotAQI">
                 <svg class="plotSvg" width="1200" height="300" id="plotAQISvg" class="svgs"></svg>
@@ -132,34 +174,66 @@
         </div>
     </div>
     <div v-show="menuId == '3'">
-        <Radio-Group v-model="qualityRank" @on-change="ChangeQualityRank">
-            <Radio label="AQI最好"></Radio>
-            <Radio label="AQI最差"></Radio>
-        </Radio-Group>
+        <div class="cardBox">
+            <div class="cardDiv">
+                <Card class="rankSelection" >
+                    <p slot="title">
+                        <Icon type="ios-film-outline"></Icon>
+                        选择排名指标
+                    </p>
+                    <ul>
+                        <div>
+                            <Radio-Group v-model="qualityRank" @on-change="ChangeQualityRank">
+                                <Radio label="AQI最好"></Radio>
+                                <Radio label="AQI最差"></Radio>
+                            </Radio-Group>
+                        </div>
+                    </ul>
+                </Card>
+            </div>
+        </div>
         <svg width="1400" height="700" id="rankSvg" class="svgs"></svg>
     </div>
     <div v-show="menuId == '4'">
-        <i-select v-model="selectRegion" placeholder="请选择地区" clearable @on-change="ChangeRegion" style="width:200px">
-            <i-option v-for="item in regionList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
-        </i-select>
+        <div class="cardBox">
+            <div class="cardDiv">
+                <Card class="regionSelection" >
+                    <p slot="title">
+                        <Icon type="ios-film-outline"></Icon>
+                        选择排名地区
+                    </p>
+                    <ul>
+                        <div>
+                            <i-select v-model="selectRegion" placeholder="请选择地区" clearable @on-change="ChangeRegion" style="width:200px">
+                                <i-option v-for="item in regionList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
+                            </i-select>
+                        </div>
+                    </ul>
+                </Card>
+            </div>
+        </div>
     </div>
     <div v-show="menuId == '5'">
-        <Radio-Group v-model="qualityDistribution" @on-change="ChangeQualityDistribution">
-            <Radio label="AQI最好"></Radio>
-            <Radio label="AQI最差"></Radio>
-        </Radio-Group>
-    </div>
-
-
-
-    <!-- <br>
-    <p>Change theme</p>
-    <Radio-Group v-model="theme1">
-        <Radio label="light"></Radio>
-        <Radio label="dark"></Radio>
-        <Radio label="primary"></Radio>
-    </Radio-Group> -->
-    
+        <div class="cardBox">
+            <div class="cardDiv">
+                <Card class="distributionSelection" >
+                    <p slot="title">
+                        <Icon type="ios-film-outline"></Icon>
+                        选择查看分布的指标
+                    </p>
+                    <ul>
+                        <div>
+                            <Radio-Group v-model="qualityDistribution" @on-change="ChangeQualityDistribution">
+                                <Radio label="AQI最好"></Radio>
+                                <Radio label="AQI最差"></Radio>
+                            </Radio-Group>
+                        </div>
+                    </ul>
+                </Card>
+            </div>
+        </div>
+        
+    </div>    
     
 </div>
 <script>
@@ -180,6 +254,7 @@
 
             invalidDate: false,
             undefinedDate: false,
+            closeRadar: false,
 
             queryTime: "xxx",
 
@@ -214,6 +289,7 @@
             selectPlot: '散点图/折线图',
             selectScale: '全局',
             selectCity: '北京',
+            showScaleCard: true,
             AQIDayMean: [],
             PM25DayMean: [],
             PM10DayMean: [],
@@ -351,7 +427,34 @@
     var myDay
 
     const mapColors = d3.scaleOrdinal(d3.schemeBlues[9])
-    console.log('color', mapColors)
+
+    /**
+     * change the open menu item and control badge to remind the new messages
+     * @name ChangeMenu
+     * @param name<string>:the name of the selected submenu
+     * @return null
+     */
+     function ChangeMenu(name) {
+      app.menuId = name;
+      if(name == '2'){
+        ReadHistoryData()
+        ChangePlot()
+        app.handleSpinCustom()
+      }
+    }
+
+    /**
+     * close the radar plot
+     * @name CloseRadarPlot
+     * @param null
+     * @return null
+     */
+     function CloseRadarPlot(){
+        var mapSvg = d3.select('#mapSvg')
+        mapSvg.selectAll('#chart').remove()
+        app.closeRadar = false
+    }
+
 
     /**
      * render the map in the first part
@@ -410,8 +513,6 @@
                 .on('mouseover', tip.show)
                 .on('mouseout', tip.hide);            
         });
-
-        radar('#chart', 'type.csv', ['20200714', 0.5, 0.6, 0.9, 0.3, 0.4, 0.5], 'syn爱的小屋');
     }
 
     /**
@@ -520,10 +621,6 @@
                     })
                 }
 
-                // console.log('locations', locations)
-                // console.log('targetValue', targetValue)
-                // console.log('cityName', cityName)
-
                 mainGroup = d3.select('#mainGroup')
                 mainGroup.selectAll('#scatterCircle').remove()
                 mainGroup.selectAll('#scatterText').remove()
@@ -612,16 +709,18 @@
                 .on('mouseover', (event, d) => {
                     mapSvg = d3.select('#mapSvg')
                     mapSvg.selectAll('#chart').remove()
+
+                    app.closeRadar = true
+
                     var radarChart = mapSvg.append('g')
                     .attr('id', 'chart')
                     .attr('transform', function(d){
-                        return `translate(${event.clientX - 300}, ${event.clientY - 160})`
+                        return `translate(${event.clientX - 275}, ${event.clientY - 70})`
                     })
                     .append("rect")
                     .attr('width', '180')
                     .attr('height', '180')
                     .attr("rx", 50)
-                    // .attr("fill", "#deebf7")
                     .attr("fill", "white")
                     .attr('opacity', 0.8);           
                     
@@ -742,7 +841,7 @@
                 .attr('transform', function(d){
                     return `translate(${app.projection(d)[0] - (circleRadius/Math.sqrt(zoomScale))*1/16}, ${app.projection(d)[1] + (circleRadius/Math.sqrt(zoomScale))*7/16})`
                 })
-                .attr('id', 'scatterText')
+                .attr('class', 'scatterText')
                 .data(targetValue)
                 .attr('display', function(d) {
                     if(d.value == -1) {
@@ -791,16 +890,6 @@
             });
         });
       
-    }
-
-    /**
-     * change the open menu item and control badge to remind the new messages
-     * @name ChangeMenu
-     * @param name<string>:the name of the selected submenu
-     * @return null
-     */
-    function ChangeMenu(name) {
-      app.menuId = name;
     }
 
      /**
@@ -862,6 +951,7 @@
     function ChangePlot() {
         console.log('==============' + 'ChangePlot' + '===================')
         if(app.selectPlot == '散点图/折线图'){
+            app.showScaleCard = true
             d3.selectAll('.plotg').remove()
             // draw scatter plot
             DrawScatterPlot('#plotAQISvg', 'AQI')
@@ -872,6 +962,7 @@
             DrawScatterPlot('#plotCOSvg', 'CO')
         }
         else{
+            app.showScaleCard = false
             // draw box plot
             d3.selectAll('.plotg').remove()
         }
@@ -887,6 +978,7 @@
         var targetData
         var yLabel
         var scaleDomain
+        var colorIndex
         const domainRange = [
             [520, 500, 700, 150, 200, 10],
             [400, 300, 300, 100, 150, 5]
@@ -896,7 +988,7 @@
             case '全局':
                 domainRangeIndex = 0
                 break;
-            case '部分':
+            case '局部':
                 domainRangeIndex = 1
                 break;
             default:
@@ -908,31 +1000,37 @@
                 targetData = app.AQIDayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][0]
+                colorIndex = 0
                 break;
             case 'PM2.5':
                 targetData = app.PM25DayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][1]
+                colorIndex = 1
                 break;
             case 'PM10':
                 targetData = app.PM10DayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][2]
+                colorIndex = 2
                 break;
             case 'SO2':
                 targetData = app.SO2DayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][3]
+                colorIndex = 3
                 break;
             case 'O3':
                 targetData = app.O3DayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][4]
+                colorIndex = 0
                 break;
             case 'CO':
                 targetData = app.CODayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][5]
+                colorIndex = 1
                 break;
             default:
                 break;
@@ -951,6 +1049,7 @@
         let gg = d3.select(divid)
         let g = gg.append('g')
         .attr('class', 'plotg')
+        .attr('transform', `translate(${-100}, ${0})`);
 
         var innerHeight = gg.attr('height')
         var innerWidth = gg.attr('width')
@@ -958,35 +1057,39 @@
         
         xScale = d3.scaleTime()
         .domain([new Date(2014, 3, 14), new Date(2021, 4, 19)])
-        .range([0, innerWidth-250]);
+        .range([0, innerWidth-250])
+        
         yScale = d3.scaleLinear()
         .domain([0, scaleDomain].reverse())
-        .range([0, innerHeight-120]);
+        .range([0, innerHeight-120])
+        
 
-        const xAxisMethod = d3.axisBottom(xScale);
-        const yAxisMethod = d3.axisLeft(yScale);
+        const xAxisMethod = d3.axisBottom(xScale).ticks(10);
+        const yAxisMethod = d3.axisLeft(yScale).ticks(5);
         const xAxisGroup = g.append('g').call(xAxisMethod)
               .attr('font-size', '1.3em')
               .attr('font-weight', 'bold');
-        xAxisGroup.append('text')
-        .attr('font-size', '2em')
-        .attr('y', 60)
-        .attr('x', innerWidth / 2 - 100)
-        .attr('fill', '#504f4f')
-        .text(xAxisLabel)
-        .attr('text-anchor', 'middle') 
+        // xAxisGroup.append('text')
+        // .attr('font-size', '1em')
+        // .attr('y', 60)
+        // .attr('x', innerWidth / 2 - 100)
+        // .attr('fill', '#504f4f')
+        // .text(xAxisLabel)
+        // .attr('text-anchor', 'middle') 
 
         const yAxisGroup = g.append('g').call(yAxisMethod)
               .attr('font-size', '1.3em')
               .attr('font-weight', 'bold');
         yAxisGroup.append('text')
-        .attr('font-size', '2em')
+        .attr('font-size', '1em')
+        .attr("font-family", 'Microsoft YaHei') 
         .attr('transform', `rotate(-90)`)
         .attr('x', -(innerHeight - 100) / 2)
         .attr('y', -70)
         .attr('fill', '#504f4f')
         .text(yAxisLabel)
         .attr('text-anchor', 'middle') 
+
         xAxisGroup.attr('transform', `translate(${200}, ${innerHeight-70})`);
         yAxisGroup.attr('transform', `translate(${200}, ${50})`);
 
@@ -1007,6 +1110,10 @@
                 return 'none'
             }
             return 'block'
+        })
+        .attr('fill', function(d){
+            
+            return mapColors(8-colorIndex)
         })
     }
 
@@ -1125,323 +1232,6 @@
         if(app.qualityRank == "AQI最好"){
             console.log('==============' + '最好' + '===================')
             // to do
-            const svg = d3.select('#rankSvg');
-            const width = svg.attr('width');
-            const height = svg.attr('height');
-            const margin = {top: 60, right: 30, bottom: 60, left: 150};
-            const innerWidth = width - margin.left - margin.right;
-            const innerHeight = height - margin.top - margin.bottom;
-            const mainGroup = svg.append('g')
-            .attr('transform', `translate(${margin.left}, ${margin.top})`)
-            .attr('id', 'maingroup');
-            // console.log(d);
-            const xValue = d => d.globalsale;
-            const yValue = d => d.platform;
-
-            
-            let xSacle, yScale;
-            const xBarValue = (datum) => {return datum.globalsale};
-            const yBarValue = (datum) => {return datum.platform};
-            const xAxisLabel = 'GlobalSale';
-            const yAxisLabel = 'Platform';
-            
-            let totalduration = 20000;
-            let aduration = 800;
-
-            const platforms = ["Wii", "NES", "GB", "DS", "X360", "PS3", "PS2", "SNES", "GBA", "3DS", "PS4", "N64", "PS", "XB", "PC", "2600", "PSP", "XOne", "GC", "WiiU", "GEN", "DC", "PSV", "SAT", "SCD", "WS", "NG", "TG16", "3DO", "GG", "PCFX"];
-
-            const colors = {
-                'Wii':"#DD6B66", 
-                'NES':"#759AA0", 
-                'GB':"#E69D87", 
-                'DS':"#8DC1A9",
-                'X360':"#EA7E53", 
-                'PS3':"#EEDD78", 
-                'PS2':"#73A373",
-                'SNES':"#73B9BC",
-                'GBA':"#7289AB", 
-                '3DS':"#91CA8C", 
-                'PS4':"#F49F42", 
-                'N64':"#AA312C",
-                'PS':"#39656D",
-                'XB':"#B35E45", 
-                'PC':"#4B8E6F", 
-                '2600 ':"#B6481C",
-                'PSP':"#BBA838", 
-                'XOne':"#386F38", 
-                'GC':"#388589", 
-                'WiiU':"#385177",
-                'GEN':"#50964A", 
-                'DC':"#C16B0D", 
-                'PSV':"#FF8500", 
-                'SAT':"#45BFD3",
-                'SCD':"#FF5F2F", 
-                'WS':"#50F3A8", 
-                'NG':"#FF4800", 
-                'TG16':"#FFDE1A",
-                '3DO':"#41D541", 
-                'GG':"#32E7EF", 
-                'PCFX':"#ef638e",
-                '2600':"#B6481C",
-            };
-
-            const renderinit = function(){
-                let g = d3.select('#maingroup');
-
-                xScale = d3.scaleLinear()
-                .domain([0, 1300])
-                .range([0, innerWidth-100]);
-                yScale = d3.scaleBand()
-                .domain(platforms)
-                .range([0, innerHeight-20])
-                .padding(0.01);
-
-                const xAxisMethod = d3.axisBottom(xScale);
-                const yAxisMethod = d3.axisLeft(yScale);
-
-                const xAxisGroup = mainGroup.append('g').call(xAxisMethod)
-                    .attr("class","x-axis")
-                    .attr('font-size', '1.2em')
-                    // .attr('font-weight', 'bold');
-                xAxisGroup.append('text')
-                .attr('font-size', '2em')
-                .attr('y', 60)
-                .attr('x', innerWidth / 2)
-                .attr('fill', '#504f4f')
-                .text(xAxisLabel);
-
-                const yAxisGroup = mainGroup.append('g').call(yAxisMethod)
-                    .attr("class","y-axis")
-                    .attr('font-size', '1.2em')
-                    // .attr('font-weight', 'bold');
-                yAxisGroup.append('text')
-                .attr('font-size', '2em')
-                .attr('transform', `rotate(-90)`)
-                .attr('x', -(innerHeight - 20) / 2)
-                .attr('y', -70)
-                .attr('fill', '#504f4f')
-                .text(yAxisLabel)
-                .attr('text-anchor', 'middle') 
-                .text(yAxisLabel);
-                xAxisGroup.attr('transform', `translate(${0}, ${innerHeight-20})`);
-
-                let legend_color = Object.values(colors);
-                let legend_text = Object.keys(colors);
-                // draw legend
-                var legend = d3.select('#maingroup').selectAll(".legend")
-                .data(legend_text).join('g')
-                .attr("class", "legend")
-                .attr("transform", function(d, i) { return "translate(" + (innerWidth - 50) + "," + ((i-1) * 22) + ")"; });
-        
-                // draw legend colored rectangles
-                legend.append("rect")
-                .data(legend_color) 
-                .attr("x", 0)
-                .attr("y", 0)
-                .attr("width", 30)
-                .attr("height", 20)
-                .style("fill", d => d);
-        
-                // draw legend text
-                legend.append("text")
-                .attr("x", 40)
-                .attr("y", 9)
-                .attr("dy", ".5em")
-                .attr("text-anchor", "start")
-                .attr("fill", "#504f4f")
-                .text(d => d); 
-
-                d3.select(".legend").remove();
-
-                g.append("text")
-                .attr('id', 'date_text')
-                .attr("x", innerWidth - 120)
-                .attr("y", innerHeight - 80)
-                .attr("dy", ".5em")
-                .style("text-anchor", "end")
-                .attr("fill", "#504f4f")
-                .attr('font-size', '5em')
-                .attr('font-weight', 'bold')
-                .text(' ');
-            }
-
-            /* 
-                Loading data and preprocessing data. 
-                Note that you can also preprocessing data in your own way using your prefered language, e.g., Python. 
-            */
-
-            d3.csv('Data/pgy.csv').then(data =>{
-                // process data
-                var sales = {};
-                var platforms = [];
-                for (var i = 0; i < data.length; i++){
-
-                var year = parseInt(data[i]['year']);
-                var platform = data[i]['platform'];
-                var globalsale = data[i]['globalsale'];
-
-                if (platforms.indexOf(platform) === -1){
-                    platforms.push(platform);
-                }
-
-                if(sales[year] !== undefined){
-                    sales[year][platform] = globalsale;
-                }
-                else{
-                    sales[year] = {};
-                    sales[year][platform] = globalsale;
-                }
-                }
-
-                renderinit();
-
-                // set the animation interval; 
-                var gamesales = []
-                
-                let c = 1980; 
-                let intervalId = setInterval(function(){
-                    if(c >= 2021){
-                        console.log('time to close this animation');
-                        clearInterval(intervalId); 
-                    }else{
-                    const transition = d3.transition().duration(aduration).ease(d3.easeLinear);
-                    console.log('year', c);
-
-                    gamesales = gamesales.sort(function(a, b){return parseFloat(b.globalsale) - parseFloat(a.globalsale)});
-
-                    var tmpgamesales = [];
-                    for (var i = 0; i < gamesales.length; i++){
-                        tmpgamesales.push({
-                        'platform':gamesales[i]['platform'],
-                        'globalsale':gamesales[i]['globalsale']
-                        });
-                    }
-                    for (var key in sales[String(c)]){
-                        var tmp = tmpgamesales.find(item => item.platform == key);
-                        if (tmp !== undefined){
-                        tmp['globalsale'] = parseFloat(sales[String(c)][key]);
-                        }
-                        else{
-                        tmpgamesales.push({
-                            'platform':key,
-                            'globalsale':parseFloat(sales[String(c)][key])
-                        });
-                        }
-
-                        gamesales = [];
-                        for (var i = 0; i < tmpgamesales.length; i++){
-                        gamesales.push({
-                            'platform':tmpgamesales[i]['platform'],
-                            'globalsale':tmpgamesales[i]['globalsale']
-                        });
-                        }
-                    }
-
-                    let g = d3.select('#maingroup');
-
-                    xScale = d3.scaleLinear()
-                    .domain([0, d3.max(gamesales, d => d.globalsale)+50])
-                    .range([0, innerWidth-80]);
-
-                    d3.select("g.x-axis")
-                    .transition(transition)
-                    .call(d3.axisBottom(xScale));
-
-                    d3.selectAll("g.x-axis g.tick")
-                    .select("line.grid-line")
-                    .remove();
-
-                    let xlines = d3.selectAll("g.x-axis g.tick")
-                    .append("line")
-                    .classed("grid-line",true);
-                    xlines.attr("x1",0)
-                    .attr("y1",0)
-                    .attr("x2",0)
-                    .attr("y2",-innerHeight);
-
-
-                    var tmpPlatforms = [];
-                    for (var i = 0; i < gamesales.length; i++){
-                        tmpPlatforms.push(gamesales[i]['platform']);
-                    }
-
-                    yScale = d3.scaleBand()
-                    .domain(tmpPlatforms)
-                    .range([0, innerHeight-20])
-                    .padding(0.01);
-                    
-                    d3.select("g.y-axis")
-                    .transition(transition)
-                    .call(d3.axisLeft(yScale));
-
-                    d3.selectAll("g.y-axis g.tick")
-                    .select("line.grid-line")
-                    .remove();
-
-                    let ylines = d3.selectAll("g.y-axis g.tick")
-                    .append("line")
-                    .classed("grid-line",true);
-
-                    ylines.attr("x1",0)
-                    .attr("y1",0)
-                    .attr("x2", innerWidth)
-                    .attr("y2",0);
-
-
-                    d3.select('#date_text').text(String(c)+'年');
-
-                    g.selectAll('.rect-barchart')
-                    .data(gamesales, data => data.platform)
-                    .join('rect')
-                    .transition(transition)
-                    .attr('id', function(d){
-                        console.log('id', d.platform)
-                        return d.platform;
-                    })
-                    .attr('value', function(d){
-                        return d.globalsale;
-                    })
-                    .attr('class', 'rect-barchart')
-                    .attr('fill', function(datum){return colors[datum.platform]})
-                    .attr("rx", 5)
-                    .attr('x', 0)
-                    .attr('height', yScale.bandwidth() * 4 / 5)
-                    .attr('width', (datum) => {return xScale(xBarValue(datum))})
-                    .attr("y", function(d, i) { //对排序之后的横坐标重排
-                        return yScale(tmpPlatforms[i]) + yScale.bandwidth() / 10 ;
-                    });
-
-                    const textbarchart = g.selectAll('.text-barchart').data(gamesales, data => data.platform);
-                    textbarchart.enter().append('text')
-                    .attr('class', 'text-barchart')
-                    .attr('y', datum => yScale(yBarValue(datum)) + yScale.bandwidth() / 2)
-                    .attr('x', (datum) => {return xScale(xBarValue(datum))})
-                    .attr('dx', 10)
-                    .attr('text-anchor', 'start')
-                    .attr("fill", "#504f4f")
-                    .attr('font-size', '1.2em')
-                    .attr('font-weight', 'bold');
-
-                    textbarchart.text(d => d.globalsale)
-                    .transition(transition)
-                    .tween('text', function(d) {
-                        var i = d3.interpolate(this.textContent, d.globalsale);
-                        return function(t){
-                            this.textContent = d3.format('.2f')(i(t));
-                        }
-                    })
-                    .attr('x', (datum) => {
-                        return xScale(xBarValue(datum));
-                    })
-                    .attr("y", function(d, i) { //对排序之后的横坐标重排
-                        return yScale(tmpPlatforms[i]) + yScale.bandwidth()/2 + 5;
-                    });
-                    
-                    c = c + 1;
-                    }
-                }, aduration); 
-                
-            })
         }
         else{
             console.log('==============' + '最差' + '===================')
@@ -1451,7 +1241,7 @@
 
     /**
      * change the quality distribution best or worse (Pie chart)
-     * @name ChangeQualityRank
+     * @name ChangeQualityDistribution
      * @param null
      * @return null
      */
@@ -1484,53 +1274,104 @@
 
   <style scoped>
       .timeSelection {
-        width:250px;
-        margin-left: 20px;
-        margin-top: 20px;
+            width:250px;
+            margin-left: 20px;
+            margin-top: 20px;
       }
 
       #content1 {
-          display: flex;
+            display: flex;
       }
 
       #test {
-          display: block;
+            display: block;
       }
 
-      #cardBox {
-        display: inline;
-        width: 300px;
+      .cardBox {
+            display: inline;
+            width: 280px;
       }
 
       .cardDiv {
-          display: flex;
-          height: 150px;
+            display: flex;
+            height: 150px;
       }
 
       .cardDiv2 {
-          display: flex;
-          height: 360px;
+            display: flex;
+            height: 360px;
       }
 
       .ivu-select {
-          margin-bottom: 10px;
+            margin-bottom: 10px;
       }
 
       .ivu-btn {
-          margin-top: 20px;
-          float: right;
+            margin-top: 20px;
+            float: right;
+      }
+
+      .plotSelection {
+            width:250px;
+            margin-left: 20px;
+            margin-top: 20px;
       }
 
       #content2 {
-          display: flex;
+            display: flex;
       }
 
       .plotSvg {
-          width: 1200px;
-          height: 300px;
+            width: 1100px;
+            height: 300px;
       }
 
+      .rankSelection{
+            width:250px;
+            margin-left: 20px;
+            margin-top: 20px;
+      }
 
+      .regionSelection{
+            width:250px;
+            margin-left: 20px;
+            margin-top: 20px;
+      }
+
+      .distributionSelection{
+            width:250px;
+            margin-left: 20px;
+            margin-top: 20px;
+      }
+
+      p {
+            font-family: "Microsoft YaHei";
+            font-size: 15px;
+      }
+
+      .ivu-menu-item {
+        font-size: 17px;
+      }
+
+      div, li, label, button, .ivu-radio-wrapper{
+            /* font-family: "华文细黑"; */
+            font-family: "Microsoft YaHei";
+            font-size: 15px;
+      }
+
+      .scatterText {
+            font-family: "Microsoft YaHei";
+      }
+
+      i {
+            font-family: "Microsoft YaHei";
+            font-size: 20px;
+      }
+
+      .title {
+        font-family: "Microsoft YaHei";
+        font-size: 12px;
+      }
   </style>
 
 </body>
