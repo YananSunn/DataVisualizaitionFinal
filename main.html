@@ -623,7 +623,7 @@
 
                 mainGroup = d3.select('#mainGroup')
                 mainGroup.selectAll('#scatterCircle').remove()
-                mainGroup.selectAll('#scatterText').remove()
+                mainGroup.selectAll('.scatterText').remove()
 
                 mainGroup.selectAll('circle')
                 .data(locations)
@@ -836,7 +836,7 @@
                 .enter()
                 .append('text')
                 .attr('font-size', 0.55/Math.sqrt(zoomScale)+'em')
-                .attr('fill', '#FFFFFFF')
+                // .attr('fill', '#FFFFFFF')
                 .attr('text-anchor', 'middle')
                 .attr('transform', function(d){
                     return `translate(${app.projection(d)[0] - (circleRadius/Math.sqrt(zoomScale))*1/16}, ${app.projection(d)[1] + (circleRadius/Math.sqrt(zoomScale))*7/16})`
@@ -1359,9 +1359,9 @@
             font-size: 15px;
       }
 
-      .scatterText {
+      /* .scatterText {
             font-family: "Microsoft YaHei";
-      }
+      } */
 
       i {
             font-family: "Microsoft YaHei";
