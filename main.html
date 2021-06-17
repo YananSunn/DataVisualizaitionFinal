@@ -1613,7 +1613,7 @@
             });
     }
 
-    function DrawScatterPlotMonth(divid, target, targetDataMonth, months){
+    function DrawScatterPlotMonth(divid, target, targetDataMonth, month){
         var yLabel
         var scaleDomain
         var colorIndex
@@ -1689,11 +1689,11 @@
 
         
         xScale = d3.scaleTime()
-        .domain(year)
+        .domain(month)
         .range([0, innerWidth-250])
         
         yScale = d3.scaleLinear()
-        .domain([0, d3.max(targetDataYear, d => +(d.value))])
+        .domain([0, d3.max(targetDataMonth, d => +(d.value))])
         .range([innerHeight-120, 0])
         
 
@@ -1726,31 +1726,6 @@
         xAxisGroup.attr('transform', `translate(${200}, ${innerHeight-70})`);
         yAxisGroup.attr('transform', `translate(${200}, ${50})`);
 
-        var dates = [];
-        fullyear = year[0].getFullYear();
-        if (fullyear == 2014)
-        {
-            dates = [[new Date(fullyear, 4, 14), new Date(fullyear, 5, 1)]];
-            for (let i = 5; i < 11; i++)
-                dates.push([new Date(fullyear, i, 1), new Date(fullyear, i+1, 1)]);
-            dates.push([new Date(fullyear, 11, 1), new Date(fullyear+1, 0, 1)]);
-        }
-        else if (fullyear == 2021)
-        {
-            dates = [
-                [new Date(fullyear, 0, 1), new Date(fullyear, 1, 1)],
-                [new Date(fullyear, 1, 1), new Date(fullyear, 2, 1)],
-                [new Date(fullyear, 2, 1), new Date(fullyear, 3, 1)],
-                [new Date(fullyear, 3, 1), new Date(fullyear, 3, 19)]
-            ];
-        }
-        else
-        {
-            for (let i = 0; i < 11; i++)
-                dates.push([new Date(fullyear, i, 1), new Date(fullyear, i+1, 1)]);
-            dates.push([new Date(fullyear, 11, 1), new Date(fullyear+1, 0, 1)]);
-        }
-
         const line = d3.line()
             .x(d => { return xScale(xValue(d)) })
             .y(d => { return yScale(+(yValue(d))) })
@@ -1761,7 +1736,7 @@
             .y(d => { return yScale(0) })
             .curve(d3.curveCardinal.tension(0.5))
 
-        const pathupdate = g.selectAll('.datacurve').data([targetDataYear])
+        const pathupdate = g.selectAll('.datacurve').data([targetDataMonth])
         const pathenter = pathupdate.enter().append('path')
             .attr('class', 'datacurve')
             .attr('fill', 'none')
@@ -1773,7 +1748,7 @@
             .transition(transition)
             .attr('d', line)
         
-        const dotupdate = g.selectAll('.dot').data(targetDataYear)
+        const dotupdate = g.selectAll('.dot').data(targetDataMonth)
         const dotenter = dotupdate.enter().append('circle')
             .attr("class", "dot") // Assign a class for styling
             .attr("cx", d => xScale(d.date))
@@ -1790,58 +1765,6 @@
         dotupdate.merge(dotenter)
             .transition(transition)
             .attr('cy', d => yScale(+(d.value)))
-
-        await transition.end();
-
-        g.selectAll(".highlightarea").data(dates).join('rect')
-            .attr('class', 'highlightarea')
-            .attr('x', d => xScale(d[0]))
-            .attr('y', 0)
-            .attr('width', d => xScale(d[1])-xScale(d[0]))
-            .attr('height', innerHeight-120)
-            .attr('fill', '#DCDCDC')
-            .attr('opacity', 0)
-            .attr('transform', `translate(${200}, ${50})`)
-            .on('mouseover', (event, d) => {
-                d3.select(event.currentTarget).attr('opacity', 0.3);
-                highlightedMonth = d;
-                g.selectAll(".dot").data(targetDataYear)
-                .attr('fill', function(d){
-                    if (d.date >= highlightedMonth[0] && d.date < highlightedMonth[1])
-                        return 'purple';
-                    else
-                        return mapColors(8-colorIndex);
-                })
-                var targetDataMonth = [];
-                targetDataYear.forEach(datum => { 
-                    if (datum.date >= d[0] && datum.date < d[1])
-                        targetDataMonth.push(datum);
-                })
-                g.selectAll('.datacure_h').data([targetDataMonth]).join('path')
-                    .attr('class', 'datacurve_h')
-                    .attr('fill', 'none')
-                    .attr('stroke-width', 2.5)
-                    .attr('d', line)
-                    .attr('transform', `translate(${200}, ${50})`)
-                    .attr('stroke', 'purple')
-            })
-            .on('mouseout', (event, d) => {
-                d3.select(event.currentTarget).attr('opacity', 0);
-                hightlightedMonth = [];
-                g.selectAll(".dot").data(targetDataYear)
-                .attr('fill', function(d){
-                    return mapColors(8-colorIndex);
-                })
-                g.selectAll(".datacurve_h").remove();
-            })
-            .on('click', (event, d) => {
-                var targetDataMonth = [];
-                targetDataYear.forEach(datum => { 
-                    if (datum.date >= d[0] && datum.date < d[1])
-                        targetDataMonth.push(datum);
-                })
-                console.log(targetDataMonth);
-            });
     }
 
     /**
