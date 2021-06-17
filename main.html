@@ -155,21 +155,57 @@
         <div id="plots">
             <div id="plotAQI">
                 <svg class="plotSvg" width="1200" height="300" id="plotAQISvg" class="svgs"></svg>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="dateBack0" @click="DateGoBack(0)">
+                    <p>返回</p>
+                </i-button>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="boxDateBack0" @click="BoxDateGoBack(0)">
+                    <p>返回</p>
+                </i-button>
             </div>
             <div id="plotPM25">
                 <svg class="plotSvg" width="1200" height="300" id="plotPM25Svg" class="svgs"></svg>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="dateBack1" @click="DateGoBack(1)">
+                    <p>返回</p>
+                </i-button>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="boxDateBack1" @click="BoxDateGoBack(1)">
+                    <p>返回</p>
+                </i-button>
             </div>
             <div id="plotPM10">
                 <svg class="plotSvg" width="1200" height="300" id="plotPM10Svg" class="svgs"></svg>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="dateBack2" @click="DateGoBack(2)">
+                    <p>返回</p>
+                </i-button>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="boxDateBack2" @click="BoxDateGoBack(2)">
+                    <p>返回</p>
+                </i-button>
             </div>
             <div id="plotSO2">
                 <svg class="plotSvg" width="1200" height="300" id="plotSO2Svg" class="svgs"></svg>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="dateBack3" @click="DateGoBack(3)">
+                    <p>返回</p>
+                </i-button>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="boxDateBack3" @click="BoxDateGoBack(3)">
+                    <p>返回</p>
+                </i-button>
             </div>
             <div id="plotO3">
                 <svg class="plotSvg" width="1200" height="300" id="plotO3Svg" class="svgs"></svg>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="dateBack4" @click="DateGoBack(4)">
+                    <p>返回</p>
+                </i-button>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="boxDateBack4" @click="BoxDateGoBack(4)">
+                    <p>返回</p>
+                </i-button>
             </div>
             <div id="plotCO">
                 <svg class="plotSvg" width="1200" height="300" id="plotCOSvg" class="svgs"></svg>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="dateBack5" @click="DateGoBack(5)">
+                    <p>返回</p>
+                </i-button>
+                <i-button class="backButton" type="info" shape="circle" size="middle" v-show="boxDateBack5" @click="BoxDateGoBack(5)">
+                    <p>返回</p>
+                </i-button>
             </div>
         </div>
     </div>
@@ -290,6 +326,21 @@
             selectScale: '全局',
             selectCity: '北京',
             showScaleCard: true,
+
+            dateBack0: false,
+            dateBack1: false,
+            dateBack2: false,
+            dateBack3: false,
+            dateBack4: false,
+            dateBack5: false,
+
+            boxDateBack0: false,
+            boxDateBack1: false,
+            boxDateBack2: false,
+            boxDateBack3: false,
+            boxDateBack4: false,
+            boxDateBack5: false,
+
             AQIDayMean: [],
             PM25DayMean: [],
             PM10DayMean: [],
@@ -455,6 +506,114 @@
         var mapSvg = d3.select('#mapSvg')
         mapSvg.selectAll('#chart').remove()
         app.closeRadar = false
+    }
+
+    /**
+     * go back the date of scatter plot 
+     * @name DateGoBack
+     * @param id<number>
+     * @return null
+     */
+     function DateGoBack(id){
+        console.log('DateGoBack', id)
+        
+        switch (id) {
+            case 0:
+                var divid = '#plotAQISvg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack0 = false 
+                DrawScatterPlot('#plotAQISvg', 'AQI')
+                break;     
+            case 1:
+                var divid = '#plotPM25Svg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack1 = false
+                DrawScatterPlot('#plotPM25Svg', 'PM2.5')
+                break;
+            case 2:
+                var divid = '#plotPM10Svg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack2 = false 
+                DrawScatterPlot('#plotPM10Svg', 'PM10')
+                break;
+            case 3:
+                var divid = '#plotSO2Svg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack3 = false 
+                DrawScatterPlot('#plotSO2Svg', 'SO2')
+                break;
+            case 4:
+                var divid = '#plotO3Svg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack4 = false 
+                DrawScatterPlot('#plotO3Svg', 'O3')
+                break;
+            case 5:
+                var divid = '#plotCOSvg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack5 = false 
+                DrawScatterPlot('#plotCOSvg', 'CO')
+                break;
+        
+            default:
+                break;
+        }
+
+        app.showScaleCard = !(app.dateBack0 || app.dateBack1 || app.dateBack2 || app.dateBack3 || app.dateBack4 || app.dateBack5)
+    }
+
+    /**
+     * go back the date of box plot 
+     * @name BoxDateGoBack
+     * @param id<number>
+     * @return null
+     */
+     function BoxDateGoBack(id){
+        console.log('BoxDateGoBack', id)
+        
+        switch (id) {
+            case 0:
+                var divid = '#plotAQISvg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack0 = false 
+                DrawScatterPlot('#plotAQISvg', 'AQI')
+                break;     
+            case 1:
+                var divid = '#plotPM25Svg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack1 = false
+                DrawScatterPlot('#plotPM25Svg', 'PM2.5')
+                break;
+            case 2:
+                var divid = '#plotPM10Svg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack2 = false 
+                DrawScatterPlot('#plotPM10Svg', 'PM10')
+                break;
+            case 3:
+                var divid = '#plotSO2Svg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack3 = false 
+                DrawScatterPlot('#plotSO2Svg', 'SO2')
+                break;
+            case 4:
+                var divid = '#plotO3Svg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack4 = false 
+                DrawScatterPlot('#plotO3Svg', 'O3')
+                break;
+            case 5:
+                var divid = '#plotCOSvg'
+                d3.select(divid).select('.plotg').remove()
+                app.dateBack5 = false 
+                DrawScatterPlot('#plotCOSvg', 'CO')
+                break;
+        
+            default:
+                break;
+        }
+
+        app.showScaleCard = !(app.dateBack0 || app.dateBack1 || app.dateBack2 || app.dateBack3 || app.dateBack4 || app.dateBack5)
     }
 
 
@@ -954,6 +1113,13 @@
         console.log('==============' + 'ChangePlot' + '===================')
         if(app.selectPlot == '散点图/折线图'){
             app.showScaleCard = true
+            app.boxDateBack0 = false
+            app.boxDateBack1 = false
+            app.boxDateBack2 = false
+            app.boxDateBack3 = false
+            app.boxDateBack4 = false
+            app.boxDateBack5 = false
+
             d3.selectAll('.plotg').remove()
             // draw scatter plot
             DrawScatterPlot('#plotAQISvg', 'AQI')
@@ -965,6 +1131,13 @@
         }
         else{
             app.showScaleCard = false
+            app.dateBack0 = false
+            app.dateBack1 = false
+            app.dateBack2 = false
+            app.dateBack3 = false
+            app.dateBack4 = false
+            app.dateBack5 = false
+
             // draw box plot
             d3.selectAll('.plotg').remove()
         }
@@ -986,6 +1159,7 @@
             [400, 300, 300, 100, 150, 5]
         ]
         var domainRangeIndex
+        var dateBackIndex
         switch (app.selectScale) {
             case '全局':
                 domainRangeIndex = 0
@@ -1003,36 +1177,42 @@
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][0]
                 colorIndex = 0
+                dateBackIndex = 0
                 break;
             case 'PM2.5':
                 targetData = app.PM25DayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][1]
                 colorIndex = 1
+                dateBackIndex = 1
                 break;
             case 'PM10':
                 targetData = app.PM10DayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][2]
                 colorIndex = 2
+                dateBackIndex = 2
                 break;
             case 'SO2':
                 targetData = app.SO2DayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][3]
                 colorIndex = 3
+                dateBackIndex = 3
                 break;
             case 'O3':
                 targetData = app.O3DayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][4]
                 colorIndex = 0
+                dateBackIndex = 4
                 break;
             case 'CO':
                 targetData = app.CODayMean
                 yLabel = target
                 scaleDomain = domainRange[domainRangeIndex][5]
                 colorIndex = 1
+                dateBackIndex = 5
                 break;
             default:
                 break;
@@ -1059,7 +1239,7 @@
         
         xScale = d3.scaleTime()
         .domain([new Date(2014, 3, 14), new Date(2021, 4, 19)])
-        .range([0, innerWidth-250])
+        .range([0, innerWidth-300])
         
         yScale = d3.scaleLinear()
         .domain([0, scaleDomain].reverse())
@@ -1163,6 +1343,32 @@
                         targetDataYear.push(datum);
                 })
                 g.remove();
+
+                switch (target) {
+                    case 'AQI':
+                        app.dateBack0 = true
+                        break;
+                    case 'PM2.5':
+                        app.dateBack1 = true
+                        break;
+                    case 'PM10':
+                        app.dateBack2 = true
+                        break;
+                    case 'SO2':
+                        app.dateBack3 = true
+                        break;
+                    case 'O3':
+                        app.dateBack4 = true
+                        break;
+                    case 'CO':
+                        app.dateBack5 = true
+                        break;
+                
+                    default:
+                        break;
+                }
+                app.showScaleCard = false
+
                 DrawScatterPlotYear(divid, target, targetDataYear, d);
                 console.log(targetDataYear);
             });
@@ -1848,8 +2054,13 @@
       }
 
       .plotSvg {
-            width: 1100px;
+            width: 1000px;
             height: 300px;
+      }
+
+      .backButton {
+            margin-top: 215px;
+            margin-left: 10px;
       }
 
       .rankSelection{
