@@ -740,15 +740,28 @@
      */
     function ChangePlot() {
         console.log('==============' + 'ChangePlot' + '===================')
-        // draw AQI scatter plot
-        DrawScatterPlot('#plotAQISvg', 'AQI')
-        DrawScatterPlot('#plotPM25Svg', 'PM2.5')
-        DrawScatterPlot('#plotPM10Svg', 'PM10')
-        DrawScatterPlot('#plotSO2Svg', 'SO2')
-        DrawScatterPlot('#plotO3Svg', 'O3')
-        DrawScatterPlot('#plotCOSvg', 'CO')
+        if(app.selectPlot == '散点图/折线图'){
+
+            // draw scatter plot
+            DrawScatterPlot('#plotAQISvg', 'AQI')
+            DrawScatterPlot('#plotPM25Svg', 'PM2.5')
+            DrawScatterPlot('#plotPM10Svg', 'PM10')
+            DrawScatterPlot('#plotSO2Svg', 'SO2')
+            DrawScatterPlot('#plotO3Svg', 'O3')
+            DrawScatterPlot('#plotCOSvg', 'CO')
+        }
+        else{
+            // draw box plot
+            d3.selectAll('.plotg').remove()
+        }
     }
 
+    /**
+     * draw scatter plot of specified target
+     * @name DrawScatterPlot
+     * @param divid<string> the id of svg; target<string> the name of target
+     * @return null
+     */
     function DrawScatterPlot(divid, target){
         var targetData
         var yLabel
@@ -799,9 +812,12 @@
         const xAxisLabel = 'date';
         const yAxisLabel = yLabel;
 
-        let g = d3.select(divid);
-        var innerHeight = g.attr('height')
-        var innerWidth = g.attr('width')
+        let gg = d3.select(divid)
+        let g = gg.append('g')
+        .attr('class', 'plotg')
+
+        var innerHeight = gg.attr('height')
+        var innerWidth = gg.attr('width')
 
         
         xScale = d3.scaleTime()
