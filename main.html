@@ -209,7 +209,7 @@
             </div>
         </div>
     </div>
-    <div v-show="menuId == '3'">
+    <div id="content3" v-show="menuId == '3'">
         <div class="cardBox">
             <div class="cardDiv">
                 <Card class="rankSelection" >
@@ -228,9 +228,9 @@
                 </Card>
             </div>
         </div>
-        <svg width="1400" height="700" id="rankSvg" class="svgs"></svg>
+        <svg width="1100" height="700" id="rankSvg" class="svgs" style='display: block;'></svg>
     </div>
-    <div v-show="menuId == '4'">
+    <div id="content4" v-show="menuId == '4'">
         <div class="cardBox">
             <div class="cardDiv">
                 <Card class="regionSelection" >
@@ -240,7 +240,7 @@
                     </p>
                     <ul>
                         <div>
-                            <i-select v-model="selectRegion" placeholder="请选择地区" clearable @on-change="ChangeRegion" style="width:200px">
+                            <i-select v-model="selectRegion" placeholder="请选择地区" @on-change="ChangeRegion" style="width:200px">
                                 <i-option v-for="item in regionList" :value="item.value" :key="item.value">{{ item.label }}</i-option>
                             </i-select>
                         </div>
@@ -248,7 +248,7 @@
                 </Card>
             </div>
         </div>
-        <svg width="1400" height="700" id="rankSvgLoc" class="svgs"></svg>
+        <svg width="1100" height="700" id="rankSvgLoc" class="svgs"></svg>
     </div>
     <div v-show="menuId == '5'">
         <div class="cardBox">
@@ -511,7 +511,7 @@
 
         const mainGroup = svg.append('g')
         .attr('class', 'ratingg')
-        .attr('transform', `translate(${margin.left}, ${margin.top})`)
+        .attr('transform', `translate(${100}, ${50})`)
 
         const xValue = d => d.AQI;
         const yValue = d => d.City;
@@ -522,17 +522,23 @@
         const xAxisMethod = d3.axisBottom(xScale);
         const yAxisMethod = d3.axisLeft(yScale);  
         const xAxisGroup = mainGroup.append('g')
-            .attr('transform', `translate(${0}, ${innerHeight})`)
+            .attr('transform', `translate(${50}, ${innerHeight})`)
             .attr('id', 'xaxis');
         const yAxisGroup = mainGroup.append('g')
+            .attr('transform', `translate(${50}, ${0})`)
             .attr('id', 'yaxis');
 
         const xAxisLabel ='AQI';
-        const yAxisLabel = 'City';
+        const yAxisLabel = '城市';
 
         const aduration = 4000;
 
         var formatPercent = d3.format(".2f");
+
+        var colorDic = {}
+        var dicSize = 0
+
+        const rectColors = d3.scaleOrdinal(d3.schemePaired)
 
 
         const render_init = function (data) {
@@ -551,7 +557,7 @@
           .attr('font-size', '2em')
           .attr('transform', `rotate(-90)`)
           .attr('x', -innerHeight / 2)
-          .attr('y', -60)
+          .attr('y', -100)
           .attr('fill', '#333333')
           .text(yAxisLabel)
           .attr('text-anchor', 'middle');
@@ -561,11 +567,12 @@
           .attr('id', 'year')
           .attr('class', 'year_text')
           .attr("x", innerWidth + 10)
-          .attr("y", innerHeight -50)
+          .attr("y", innerHeight - 25)
+          .attr('transform', `translate(${170}, ${0})`)
           .attr("dy", ".5em")
           .style("text-anchor", "end")
           .attr("fill", "#504f4f")
-          .attr('font-size', '4em')
+          .attr('font-size', '2em')
           .attr('font-weight', 'bold')
           .text(' ');
 
@@ -574,6 +581,9 @@
           colorScale.domain(allplatforms);
           const sp = d3.scalePoint().domain(allplatforms).range([0,1]);
           colorScale.range(allplatforms.map(d => d3.interpolateRainbow(sp(d))));
+          console.log('color scale', colorScale)
+
+          
         };
       
         const render_update = async function(seq){
@@ -595,9 +605,17 @@
           //柱形图的进入和更新
           let rectupdates = mainGroup.selectAll('rect').data(seq, d => yValue(d));
           let rectenters = rectupdates.enter().append('rect')
-          .attr('fill', d => colorScale(yValue(d)))
+          .attr('fill', function(d){
+            if(colorDic[d.City] == undefined){
+                colorDic[d.City] = dicSize
+                dicSize += 1
+            }
+            var colorIndex = colorDic[d.City]
+            return rectColors(colorIndex)
+          })
           .attr('opacity', .8)
           .attr('y', d => yScale(yValue(d)))
+          .attr('transform', `translate(${50}, ${0})`)
           .attr('width', 0)
           .attr('height', yScale.bandwidth());
             
@@ -1331,13 +1349,26 @@
         const xScale = d3.scaleBand();
         const yScale = d3.scaleLinear();
         const xAxisMethod = d3.axisBottom(xScale);
-        const yAxisMethod = d3.axisLeft(yScale);  
+        const yAxisMethod = d3.axisLeft(yScale).ticks(5);  
         const xAxisGroup = mainGroup.append('g')
             .attr('transform', `translate(${0}, ${innerHeight})`)
-            .attr('id', 'xaxis');
+            .attr('id', 'xaxis')
+            .attr('font-size', '1.3em')
+            .attr('font-weight', 'bold');
         const yAxisGroup = mainGroup.append('g')
-            .attr('id', 'yaxis');
+            .attr('id', 'yaxis')
+            .attr('font-size', '1.3em')
+            .attr('font-weight', 'bold');
 
+        yAxisGroup.append('text')
+        .attr('font-size', '2em')
+        .attr("font-family", 'Microsoft YaHei') 
+        .attr('transform', `rotate(-90)`)
+        .attr('x', -(innerHeight - 100) / 2)
+        .attr('y', -50)
+        .attr('fill', '#504f4f')
+        .text(target)
+        .attr('text-anchor', 'middle') 
         
         const months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
         const years = [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021];
@@ -1438,6 +1469,7 @@
                 var divid = '#plot'+target+'Svg';
                 if (target == 'PM2.5')
                     divid = '#plotPM25Svg';
+                
                 xScale.domain(months).range([0, innerWidth - 300]).padding(0.1); 
                 yScale.domain([d3.min(boxplotData, d => d.min), d3.max(boxplotData, d => d.max)]).range([innerHeight - 120, 0]);
                 var xAxisGroup = d3.select(divid).selectAll('.plotg').select('#xaxis');
@@ -2416,10 +2448,26 @@
             margin-top: 20px;
       }
 
+      #content3 {
+            display: flex;
+      }
+
+      #rankSvg {
+          margin-top: 0px;
+      }
+
+      #year {
+            font-family: "Microsoft YaHei";
+      }
+
       .regionSelection{
             width:250px;
             margin-left: 20px;
             margin-top: 20px;
+      }
+
+      #content4 {
+            display: flex;
       }
 
       .distributionSelection{
