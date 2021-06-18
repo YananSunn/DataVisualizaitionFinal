@@ -250,7 +250,7 @@
         </div>
         <svg width="1100" height="700" id="rankSvgLoc" class="svgs"></svg>
     </div>
-    <div v-show="menuId == '5'">
+    <div id="content5" v-show="menuId == '5'">
         <div class="cardBox">
             <div class="cardDiv">
                 <Card class="distributionSelection" >
@@ -269,7 +269,7 @@
                 </Card>
             </div>
         </div>
-        <svg width="1400" height="700" id="rankSvgPie" class="svgs"></svg>
+        <svg width="1100" height="700" id="rankSvgPie" class="svgs"></svg>
     </div>    
     
 </div>
@@ -2640,6 +2640,10 @@
             width:250px;
             margin-left: 20px;
             margin-top: 20px;
+      }
+
+      #content5 {
+            display: flex;
       }
 
       p {
