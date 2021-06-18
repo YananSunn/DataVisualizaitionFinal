@@ -248,6 +248,7 @@
                 </Card>
             </div>
         </div>
+        <svg width="1400" height="700" id="rankSvgLoc" class="svgs"></svg>
     </div>
     <div v-show="menuId == '5'">
         <div class="cardBox">
@@ -494,6 +495,175 @@
         ChangePlot()
         app.handleSpinCustom()
       }
+      if(name == '3'){
+        DrawRating('#rankSvg', 'AQI_seasonmean_D3.csv', app.qualityRank)
+      }
+    }
+
+    function DrawRating(divid, filename, good){
+        const svg = d3.select(divid);
+        svg.selectAll('.ratingg').remove()
+        const width = svg.attr('width');
+        const height = svg.attr('height');
+        const margin = {top: 100, right: 180, bottom: 100, left: 180};
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        const mainGroup = svg.append('g')
+        .attr('class', 'ratingg')
+        .attr('transform', `translate(${margin.left}, ${margin.top})`)
+
+        const xValue = d => d.AQI;
+        const yValue = d => d.City;
+        const keyValue = d => d.Season;
+        const xScale = d3.scaleLinear();
+        const yScale = d3.scaleBand();
+        const colorScale = d3.scaleOrdinal();
+        const xAxisMethod = d3.axisBottom(xScale);
+        const yAxisMethod = d3.axisLeft(yScale);  
+        const xAxisGroup = mainGroup.append('g')
+            .attr('transform', `translate(${0}, ${innerHeight})`)
+            .attr('id', 'xaxis');
+        const yAxisGroup = mainGroup.append('g')
+            .attr('id', 'yaxis');
+
+        const xAxisLabel ='AQI';
+        const yAxisLabel = 'City';
+
+        const aduration = 4000;
+
+        var formatPercent = d3.format(".2f");
+
+
+        const render_init = function (data) {
+          //添加x轴标签
+          xAxisGroup.append('text')
+          .attr('class', 'axisname')
+          .attr('font-size', '2em')
+          .attr('y', 60)
+          .attr('x', innerWidth / 2)
+          .attr('fill', '#333333')
+          .text(xAxisLabel)
+
+          //添加y轴标签
+          yAxisGroup.append('text')
+          .attr('class', 'axisname')
+          .attr('font-size', '2em')
+          .attr('transform', `rotate(-90)`)
+          .attr('x', -innerHeight / 2)
+          .attr('y', -60)
+          .attr('fill', '#333333')
+          .text(yAxisLabel)
+          .attr('text-anchor', 'middle');
+
+          //年份
+          mainGroup.append("text")
+          .attr('id', 'year')
+          .attr('class', 'year_text')
+          .attr("x", innerWidth + 10)
+          .attr("y", innerHeight -50)
+          .attr("dy", ".5em")
+          .style("text-anchor", "end")
+          .attr("fill", "#504f4f")
+          .attr('font-size', '4em')
+          .attr('font-weight', 'bold')
+          .text(' ');
+
+          //色盘
+          allplatforms = Array.from(new Set(data.map(d => yValue(d))));
+          colorScale.domain(allplatforms);
+          const sp = d3.scalePoint().domain(allplatforms).range([0,1]);
+          colorScale.range(allplatforms.map(d => d3.interpolateRainbow(sp(d))));
+        };
+      
+        const render_update = async function(seq){
+          //年份更新
+          d3.select('#year').text(keyValue(seq[0]));
+
+          //动画
+          let transition = d3.transition().duration(aduration).ease(d3.easeLinear); 
+          
+          //坐标轴更新
+          xScale.domain([0, d3.max(seq, xValue)]).range([0, innerWidth]); 
+          yScale.domain(seq.map(yValue)).range([0, innerHeight]).padding(0.1);
+          
+          xAxisGroup.transition(transition).call(xAxisMethod);
+          yAxisGroup.transition(transition).call(yAxisMethod);
+
+          mainGroup.selectAll('.tick text').attr('font-size', '1.5em');
+
+          //柱形图的进入和更新
+          let rectupdates = mainGroup.selectAll('rect').data(seq, d => yValue(d));
+          let rectenters = rectupdates.enter().append('rect')
+          .attr('fill', d => colorScale(yValue(d)))
+          .attr('opacity', .8)
+          .attr('y', d => yScale(yValue(d)))
+          .attr('width', 0)
+          .attr('height', yScale.bandwidth());
+            
+          rectupdates.merge(rectenters).transition(transition)
+          .attr('y', d => yScale(yValue(d)))
+          .attr('width', d => xScale(xValue(d)))
+          .attr('height', yScale.bandwidth());
+
+          rectupdates.exit().remove();
+
+          //数字的进入和更新
+          let textupdates = mainGroup.selectAll('.globalsale_text').data(seq, d => yValue(d));
+          let textenters = rectupdates.enter().append('text')
+          .attr("class", "globalsale_text")
+          .text('0.00')
+          .attr('font-size', '0.8em')
+          .attr('dx', 5)
+          .attr('dy', 5)
+          .attr('x', 0)
+          .attr('y', d => yScale(yValue(d)) + yScale.bandwidth() / 2);
+            
+          textupdates.merge(textenters).transition(transition)
+          .attr('x', d => xScale(xValue(d)))
+          .attr('y', d => yScale(yValue(d)) + yScale.bandwidth() / 2)
+          .tween("text", function(d) {
+              var i = d3.interpolate(this.textContent, xValue(d));
+              return function(t) {
+                  this.textContent = formatPercent(i(t));
+              };
+          });
+
+          textupdates.exit().remove()
+
+          await transition.end();
+        };
+
+        d3.csv('Data/'+filename).then(async data => {
+          data.forEach(datum => {
+              datum.AQI = +(datum.AQI);
+              datum.Season = +(datum.Season);
+          });
+          console.log(data)
+
+          let data_per_year = {};
+          allkeys = Array.from(new Set(data.map(d => keyValue(d))));
+          allkeys.sort();
+          allkeys.forEach(key => { data_per_year[key] = [] });
+          data.forEach(d => {
+              if (xValue(d) != -1) 
+                data_per_year[keyValue(d)].push(d); 
+          });
+          allkeys.forEach(key => data_per_year[key].sort(function (a, b) {
+                return xValue(b) - xValue(a);
+          }));
+          
+          render_init(data);
+
+          for(let i = 0; i < allkeys.length; i++){
+              // console.log(allkeys[i]);
+              // console.log(data_per_year[allkeys[i]])
+              if (good == 'AQI最差')
+                await render_update(data_per_year[allkeys[i]].slice(0, 20));
+              else
+                await render_update(data_per_year[allkeys[i]].slice(-20, -1).reverse());
+          }
+        })
     }
 
     /**
@@ -575,38 +745,38 @@
             case 0:
                 var divid = '#plotAQISvg'
                 d3.select(divid).select('.plotg').remove()
-                app.dateBack0 = false 
-                DrawScatterPlot('#plotAQISvg', 'AQI')
+                app.boxDateBack0 = false 
+                yearboxplot('#plotAQISvg', 'AQI')
                 break;     
             case 1:
                 var divid = '#plotPM25Svg'
                 d3.select(divid).select('.plotg').remove()
-                app.dateBack1 = false
-                DrawScatterPlot('#plotPM25Svg', 'PM2.5')
+                app.boxDateBack1 = false
+                yearboxplot('#plotPM25Svg', 'PM2.5')
                 break;
             case 2:
                 var divid = '#plotPM10Svg'
                 d3.select(divid).select('.plotg').remove()
-                app.dateBack2 = false 
-                DrawScatterPlot('#plotPM10Svg', 'PM10')
+                app.boxDateBack2 = false 
+                yearboxplot('#plotPM10Svg', 'PM10')
                 break;
             case 3:
                 var divid = '#plotSO2Svg'
                 d3.select(divid).select('.plotg').remove()
-                app.dateBack3 = false 
-                DrawScatterPlot('#plotSO2Svg', 'SO2')
+                app.boxDateBack3 = false 
+                yearboxplot('#plotSO2Svg', 'SO2')
                 break;
             case 4:
                 var divid = '#plotO3Svg'
                 d3.select(divid).select('.plotg').remove()
-                app.dateBack4 = false 
-                DrawScatterPlot('#plotO3Svg', 'O3')
+                app.boxDateBack4 = false 
+                yearboxplot('#plotO3Svg', 'O3')
                 break;
             case 5:
                 var divid = '#plotCOSvg'
                 d3.select(divid).select('.plotg').remove()
-                app.dateBack5 = false 
-                DrawScatterPlot('#plotCOSvg', 'CO')
+                app.boxDateBack5 = false 
+                yearboxplot('#plotCOSvg', 'CO')
                 break;
         
             default:
@@ -1140,7 +1310,247 @@
 
             // draw box plot
             d3.selectAll('.plotg').remove()
+            yearboxplot('#plotAQISvg', 'AQI')
+            yearboxplot('#plotPM25Svg', 'PM2.5')
+            yearboxplot('#plotPM10Svg', 'PM10')
+            yearboxplot('#plotSO2Svg', 'SO2')
+            yearboxplot('#plotO3Svg', 'O3')
+            yearboxplot('#plotCOSvg', 'CO')
         }
+    }
+
+    const yearboxplot = function (divid, target) {
+        let gg = d3.select(divid)
+        let mainGroup = gg.append('g')
+            .attr('class', 'plotg')
+            .attr('transform', `translate(${-100}, ${0})`);
+
+        var innerHeight = gg.attr('height')
+        var innerWidth = gg.attr('width')
+
+        const xScale = d3.scaleBand();
+        const yScale = d3.scaleLinear();
+        const xAxisMethod = d3.axisBottom(xScale);
+        const yAxisMethod = d3.axisLeft(yScale);  
+        const xAxisGroup = mainGroup.append('g')
+            .attr('transform', `translate(${0}, ${innerHeight})`)
+            .attr('id', 'xaxis');
+        const yAxisGroup = mainGroup.append('g')
+            .attr('id', 'yaxis');
+
+        
+        const months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+        const years = [2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021];
+        var myCity = app.selectCity;
+
+        d3.csv('Data_v2/'+target+'_daymean.csv').then(async data => {
+            var yearData = {};
+            var yearDataWithTime = {};
+            var boxplotData = [];
+            years.forEach(key => { yearData[key] = []; yearDataWithTime[key] = [] });
+            data.forEach(d => {
+                d[myCity] = +(d[myCity]);
+                if (d[myCity] != -1) 
+                {
+                    yearData[d[''].slice(0,4)].push(d[myCity]);
+                    yearDataWithTime[d[''].slice(0,4)].push([d[''], d[myCity]]);
+                }
+            });
+            console.log(yearDataWithTime);
+            console.log(data);
+
+            //boxplotData.length = 0;
+            years.forEach(key => {
+                var tmpData = yearData[key];
+                var data_sorted = tmpData.sort(d3.ascending);
+                var q1 = d3.quantile(data_sorted, .25);
+                var median = d3.quantile(data_sorted, .5);
+                var q3 = d3.quantile(data_sorted, .75);
+                var interQuantileRange = q3 - q1;
+                var min = q1 - 1.5 * interQuantileRange;
+                var max = q1 + 1.5 * interQuantileRange;
+                boxplotData.push({key: key, q1: q1, median: median, q3: q3, interQuantileRange: interQuantileRange, min: min, max: max});
+            });
+
+            xScale.domain(years).range([0, innerWidth - 300]).padding(0.1); 
+            yScale.domain([d3.min(boxplotData, d => d.min), d3.max(boxplotData, d => d.max)]).range([innerHeight - 120, 0]);
+
+            xAxisGroup.call(xAxisMethod);
+            yAxisGroup.call(yAxisMethod);
+            xAxisGroup.attr('transform', `translate(${200}, ${innerHeight-70})`);
+            yAxisGroup.attr('transform', `translate(${200}, ${50})`);
+
+            switch (target) {
+                    case 'AQI':
+                        app.boxDateBack0 = false
+                        break;
+                    case 'PM2.5':
+                        app.boxDateBack1 = false
+                        break;
+                    case 'PM10':
+                        app.boxDateBack2 = false
+                        break;
+                    case 'SO2':
+                        app.boxDateBack3 = false
+                        break;
+                    case 'O3':
+                        app.boxDateBack4 = false
+                        break;
+                    case 'CO':
+                        app.boxDateBack5 = false
+                        break;
+                
+                    default:
+                        break;
+                }
+            drawboxplot(boxplotData, divid, target, xScale, yScale, innerHeight, innerWidth);
+        
+            d3.selectAll('.boxrect')
+            .on('mouseover', (event, d) => {
+                d3.select(event.currentTarget).attr('fill', '#F4A460');
+            })
+            .on('mouseout', (event, d) => {
+                d3.select(event.currentTarget).attr('fill', '#69b3a2');
+            })
+            .on('click', (event, d) => {
+                var monthData = {};
+                months.forEach(key => { monthData[key] = [] });
+                yearDataWithTime[d.key+''].forEach(d => { 
+                    monthData[d[0].slice(4,6)].push(d[1]);
+                });
+                var boxplotData = [];
+                //boxplotData.length = 0;
+                months.forEach(key => {
+                    var tmpData = monthData[key];
+                    if (tmpData.length > 0)
+                    {
+                        var data_sorted = tmpData.sort(d3.ascending);
+                        var q1 = d3.quantile(data_sorted, .25);
+                        var median = d3.quantile(data_sorted, .5);
+                        var q3 = d3.quantile(data_sorted, .75);
+                        var interQuantileRange = q3 - q1;
+                        var min = q1 - 1.5 * interQuantileRange;
+                        var max = q1 + 1.5 * interQuantileRange;
+                        boxplotData.push({key: key, q1: q1, median: median, q3: q3, interQuantileRange: interQuantileRange, min: min, max: max});
+                    }
+                });
+                var target = d3.select(event.currentTarget).attr('id').slice(0, -4);
+                var divid = '#plot'+target+'Svg';
+                if (target == 'PM2.5')
+                    divid = '#plotPM25Svg';
+                xScale.domain(months).range([0, innerWidth - 300]).padding(0.1); 
+                yScale.domain([d3.min(boxplotData, d => d.min), d3.max(boxplotData, d => d.max)]).range([innerHeight - 120, 0]);
+                var xAxisGroup = d3.select(divid).selectAll('.plotg').select('#xaxis');
+                var yAxisGroup = d3.select(divid).selectAll('.plotg').select('#yaxis');
+                xAxisGroup.call(xAxisMethod);
+                yAxisGroup.call(yAxisMethod);
+                xAxisGroup.attr('transform', `translate(${200}, ${innerHeight-70})`);
+                yAxisGroup.attr('transform', `translate(${200}, ${50})`);
+                switch (target) {
+                    case 'AQI':
+                        app.boxDateBack0 = true
+                        break;
+                    case 'PM2.5':
+                        app.boxDateBack1 = true
+                        break;
+                    case 'PM10':
+                        app.boxDateBack2 = true
+                        break;
+                    case 'SO2':
+                        app.boxDateBack3 = true
+                        break;
+                    case 'O3':
+                        app.boxDateBack4 = true
+                        break;
+                    case 'CO':
+                        app.boxDateBack5 = true
+                        break;
+                
+                    default:
+                        break;
+                }
+                drawboxplot(boxplotData, divid, target, xScale, yScale, innerHeight, innerWidth);
+            });
+        })
+    }
+
+    const drawboxplot = function (boxplotData, divid, target, xScale, yScale, innerHeight, innerWidth) {
+        mainGroup = d3.select(divid).selectAll('.plotg');
+        let transition = d3.transition().duration(1000).ease(d3.easeLinear);
+        mainGroup.selectAll('.vline').remove();
+        let vlineupdates = mainGroup.selectAll('.vline').data(boxplotData);
+        let vlineenters = vlineupdates.enter().append('line')
+        .attr('class', 'vline')
+        .attr("stroke", "black")
+        .attr('transform', `translate(${200}, ${50})`)
+        .attr('x1', d => xScale(d.key)+xScale.bandwidth()/2)
+        .attr('x2', d => xScale(d.key)+xScale.bandwidth()/2)
+        .attr('y1', innerHeight-120)
+        .attr('y2', innerHeight-120);      
+        vlineupdates.merge(vlineenters).transition(transition)
+        .attr('y1', d => yScale(d.min))
+        .attr('y2', d => yScale(d.max));
+
+        mainGroup.selectAll('.boxrect').remove();
+        let rectupdates = mainGroup.selectAll('.boxrect').data(boxplotData);
+        let rectenters = rectupdates.enter().append('rect')
+        .attr('class', 'boxrect')
+        .attr('id', target+'rect')
+        .attr('fill', "#69b3a2")
+        .attr("stroke", "black")
+        .attr('transform', `translate(${200}, ${50})`)
+        .attr('x', d => xScale(d.key)+xScale.bandwidth()/4)
+        .attr('width', xScale.bandwidth()/2)
+        .attr('y', innerHeight-120)
+        .attr('height', 0);      
+        rectupdates.merge(rectenters).transition(transition)
+        .attr('y', d => yScale(d.q3))
+        .attr('height', d => yScale(d.q1) - yScale(d.q3));
+        
+        mainGroup.selectAll('.medianline').remove();
+        let medianlineupdates = mainGroup.selectAll('.medianline').data(boxplotData);
+        let medianlineenters = medianlineupdates.enter()
+        .append('line')
+        .attr('class', 'medianline')
+        .attr("stroke", "black")
+        .attr('transform', `translate(${200}, ${50})`)
+        .attr('x1', d => xScale(d.key)+xScale.bandwidth()/4)
+        .attr('x2', d => xScale(d.key)+xScale.bandwidth()*3/4)
+        .attr('y1', innerHeight-120)
+        .attr('y2', innerHeight-120);     
+        medianlineupdates.merge(medianlineenters).transition(transition)
+        .attr('y1', d => yScale(d.median))
+        .attr('y2', d => yScale(d.median));  
+
+        mainGroup.selectAll('.minline').remove();
+        let minlineupdates = mainGroup.selectAll('.minline').data(boxplotData);
+        let minlineenters = minlineupdates.enter()
+        .append('line')
+        .attr('class', 'minline')
+        .attr("stroke", "black")
+        .attr('transform', `translate(${200}, ${50})`)
+        .attr('x1', d => xScale(d.key)+xScale.bandwidth()/4)
+        .attr('x2', d => xScale(d.key)+xScale.bandwidth()*3/4)
+        .attr('y1', innerHeight-120)
+        .attr('y2', innerHeight-120);     
+        minlineupdates.merge(minlineenters).transition(transition)
+        .attr('y1', d => yScale(d.min))
+        .attr('y2', d => yScale(d.min)); 
+        
+        mainGroup.selectAll('.maxline').remove();
+        let maxlineupdates = mainGroup.selectAll('.maxline').data(boxplotData);
+        let maxlineenters = maxlineupdates.enter()
+        .append('line')
+        .attr('class', 'maxline')
+        .attr("stroke", "black")
+        .attr('transform', `translate(${200}, ${50})`)
+        .attr('x1', d => xScale(d.key)+xScale.bandwidth()/4)
+        .attr('x2', d => xScale(d.key)+xScale.bandwidth()*3/4)
+        .attr('y1', innerHeight-120)
+        .attr('y2', innerHeight-120);     
+        maxlineupdates.merge(maxlineenters).transition(transition)
+        .attr('y1', d => yScale(d.max))
+        .attr('y2', d => yScale(d.max));
     }
 
     /**
@@ -1178,6 +1588,7 @@
                 scaleDomain = domainRange[domainRangeIndex][0]
                 colorIndex = 0
                 dateBackIndex = 0
+                app.dateBack0 = false 
                 break;
             case 'PM2.5':
                 targetData = app.PM25DayMean
@@ -1185,6 +1596,7 @@
                 scaleDomain = domainRange[domainRangeIndex][1]
                 colorIndex = 1
                 dateBackIndex = 1
+                app.dateBack1 = false
                 break;
             case 'PM10':
                 targetData = app.PM10DayMean
@@ -1192,6 +1604,7 @@
                 scaleDomain = domainRange[domainRangeIndex][2]
                 colorIndex = 2
                 dateBackIndex = 2
+                app.dateBack2 = false
                 break;
             case 'SO2':
                 targetData = app.SO2DayMean
@@ -1199,6 +1612,7 @@
                 scaleDomain = domainRange[domainRangeIndex][3]
                 colorIndex = 3
                 dateBackIndex = 3
+                app.dateBack3 = false
                 break;
             case 'O3':
                 targetData = app.O3DayMean
@@ -1206,6 +1620,7 @@
                 scaleDomain = domainRange[domainRangeIndex][4]
                 colorIndex = 0
                 dateBackIndex = 4
+                app.dateBack4 = false
                 break;
             case 'CO':
                 targetData = app.CODayMean
@@ -1213,11 +1628,11 @@
                 scaleDomain = domainRange[domainRangeIndex][5]
                 colorIndex = 1
                 dateBackIndex = 5
+                app.dateBack5 = false
                 break;
             default:
                 break;
         }
-
 
         const xValue = d => d.date;
         const yValue = d => d.value;
@@ -1376,8 +1791,8 @@
 
     /**
      * draw scatter plot of specified target
-     * @name DrawScatterPlot
-     * @param divid<string> the id of svg; target<string> the name of target
+     * @name DrawScatterPlotYear
+     * @param divid<string> the id of svg; target<string> the name of target; targetDataYear[] data for rendering; year[] selected year
      * @return null
      */
      async function DrawScatterPlotYear(divid, target, targetDataYear, year){
@@ -1444,7 +1859,7 @@
         const yBarValue = (datum) => {return datum.value};
         const xAxisLabel = 'date';
         const yAxisLabel = yLabel;
-        let transition = d3.transition().duration(2000).ease(d3.easeLinear);
+        let transition = d3.transition().duration(1000).ease(d3.easeLinear);
 
         let gg = d3.select(divid)
         let g = gg.append('g')
@@ -1457,7 +1872,7 @@
         
         xScale = d3.scaleTime()
         .domain(year)
-        .range([0, innerWidth-250])
+        .range([0, innerWidth-270])
         
         yScale = d3.scaleLinear()
         .domain([0, d3.max(targetDataYear, d => +(d.value))])
@@ -1465,9 +1880,9 @@
         
 
         const xAxisMethod = d3.axisBottom(xScale);
-        const yAxisMethod = d3.axisLeft(yScale);
+        const yAxisMethod = d3.axisLeft(yScale).ticks(5);
         const xAxisGroup = g.append('g').call(xAxisMethod)
-              .attr('font-size', '1.3em')
+              .attr('font-size', '0.9em')
               .attr('font-weight', 'bold');
         // xAxisGroup.append('text')
         // .attr('font-size', '1em')
@@ -1613,6 +2028,12 @@
             });
     }
 
+    /**
+     * draw scatter plot of specified target
+     * @name DrawScatterPlotMonth
+     * @param divid<string> the id of svg; target<string> the name of target; targetDataYear[] data for rendering; year[] selected month
+     * @return null
+     */
     function DrawScatterPlotMonth(divid, target, targetDataMonth, month){
         var yLabel
         var scaleDomain
@@ -1677,7 +2098,7 @@
         const yBarValue = (datum) => {return datum.value};
         const xAxisLabel = 'date';
         const yAxisLabel = yLabel;
-        let transition = d3.transition().duration(2000).ease(d3.easeLinear);
+        let transition = d3.transition().duration(1000).ease(d3.easeLinear);
 
         let gg = d3.select(divid)
         let g = gg.append('g')
@@ -1690,15 +2111,15 @@
         
         xScale = d3.scaleTime()
         .domain(month)
-        .range([0, innerWidth-250])
+        .range([0, innerWidth-270])
         
         yScale = d3.scaleLinear()
         .domain([0, d3.max(targetDataMonth, d => +(d.value))])
         .range([innerHeight-120, 0])
         
 
-        const xAxisMethod = d3.axisBottom(xScale);
-        const yAxisMethod = d3.axisLeft(yScale);
+        const xAxisMethod = d3.axisBottom(xScale).ticks(8);
+        const yAxisMethod = d3.axisLeft(yScale).ticks(5);
         const xAxisGroup = g.append('g').call(xAxisMethod)
               .attr('font-size', '1.3em')
               .attr('font-weight', 'bold');
@@ -1882,10 +2303,12 @@
         if(app.qualityRank == "AQI最好"){
             console.log('==============' + '最好' + '===================')
             // to do
+            DrawRating('#rankSvg', 'AQI_seasonmean_D3.csv', app.qualityRank)
         }
         else{
             console.log('==============' + '最差' + '===================')
             // to do
+            DrawRating('#rankSvg', 'AQI_seasonmean_D3.csv', app.qualityRank)
         }
     }
 
@@ -1917,6 +2340,7 @@
         console.log('==============' + 'ChangeRegion' + '===================')
         console.log('当前选择的展示区域是', app.selectRegion)
         // to do
+        DrawRating('#rankSvgLoc', 'AQI_seasonmean_'+app.selectRegion+'_forD3.csv', 'AQI最差')
     }
     
 
