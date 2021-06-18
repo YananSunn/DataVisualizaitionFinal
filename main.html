@@ -269,7 +269,7 @@
                 </Card>
             </div>
         </div>
-        
+        <svg width="1400" height="700" id="rankSvgPie" class="svgs"></svg>
     </div>    
     
 </div>
@@ -498,6 +498,9 @@
       if(name == '3'){
         DrawRating('#rankSvg', 'AQI_seasonmean_D3.csv', app.qualityRank)
       }
+      if(name == '5'){
+        DrawPieRating(app.qualityRank)
+      }
     }
 
     function DrawRating(divid, filename, good){
@@ -663,6 +666,169 @@
               else
                 await render_update(data_per_year[allkeys[i]].slice(-20, -1).reverse());
           }
+        })
+    }
+
+    function DrawPieRating(good){
+        const svg = d3.select('#rankSvgPie');
+        svg.selectAll('.ratingg').remove()
+        const width = svg.attr('width');
+        const height = svg.attr('height');
+        const margin = {top: 100, right: 180, bottom: 100, left: 180};
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        const mainGroup = svg.append('g')
+        .attr('class', 'ratingg')
+        .attr('transform', `translate(${margin.left}, ${margin.top})`)
+
+        const region = ['华中','华北','华东','华南','东北','西北','西南'];
+        const xValue = d => d.AQI;
+        const yValue = d => d.City;
+        const keyValue = d => d.Season;
+
+        const render_update = async function(data){
+            let transition = d3.transition().duration(3000).ease(d3.easeLinear); 
+            const arcOuter = d3.arc().innerRadius(220).outerRadius(220);
+            const arcPath = d3.arc().innerRadius(0).outerRadius(200);
+            const pathLine = d3.line().x(d => d.x).y(d => d.y);
+            const pie = d3.pie().value(d => {return d.count});
+            const arcData = pie(data);
+            const color = d3.scaleOrdinal()
+                .domain(data.map(d => d.region))
+                .range(d3.schemeSet3.concat(d3.schemePaired).concat(d3.schemeTableau10));
+
+            let arcupdates = mainGroup.selectAll('.arcs').data(arcData);
+            let arcenters = arcupdates.enter().append('path')
+                .attr('class','arcs')
+                .attr('transform', `translate(${innerWidth/2}, ${innerHeight/2})`)
+                .attr('fill', d => color(d.data.region));
+            
+            arcupdates.merge(arcenters)
+                .transition(transition)
+                .attrTween('d', tweenPie);
+            
+            mainGroup.selectAll('.arctext').remove();
+            let textupdates = mainGroup.append('g').attr('transform', `translate(${innerWidth/2}, ${innerHeight/2})`)
+                .selectAll('.arctext').data(arcData);
+            let textenters = textupdates.enter().append('text')
+                .attr('class','arctext')
+                .attr('transform', d => {
+                    if ((d.endAngle + d.startAngle) / 2 < Math.PI)
+                        return `translate(250, ${arcOuter.centroid(d)[1]})`;
+                    else
+                        return `translate(-250, ${arcOuter.centroid(d)[1]})`;
+                })
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '1.2em')
+                .attr('dy', -10)
+                //.attr('font-weight', 'bold')
+                .attr('fill', '#696969')
+                .text(d => d.data.region)
+                .attr('opacity', 0);
+            
+            textupdates.merge(textenters)
+                .transition(transition).delay(1000)
+                .attr('opacity', d => {
+                    if (d.endAngle - d.startAngle < Math.PI / 12)
+                        return 0;
+                    else
+                        return 1;
+                });
+            textupdates.exit().remove();
+            
+            mainGroup.selectAll('.arcline').remove();
+            let lineupdates = mainGroup.append('g').attr('transform', `translate(${innerWidth/2}, ${innerHeight/2})`)
+                .selectAll('.arcline').data(arcData);
+            let lineenters = lineupdates.enter().append('path')
+                .attr('class','arcline')
+                .attr('stroke', '#696969')
+                .attr('stroke-width', 2)
+                .attr('fill', 'none')
+                .attr('d', d => {
+                    const myArray = [];
+                    if (d.endAngle - d.startAngle >= Math.PI / 12)
+                    {
+                        myArray.push({'x':arcPath.centroid(d)[0], 'y':arcPath.centroid(d)[1]});
+                        myArray.push({'x':arcOuter.centroid(d)[0], 'y':arcOuter.centroid(d)[1]});
+                        if ((d.endAngle + d.startAngle) / 2 < Math.PI)
+                            myArray.push({'x':250, 'y':arcOuter.centroid(d)[1]});
+                        else
+                            myArray.push({'x':-250, 'y':arcOuter.centroid(d)[1]});
+                    }
+                    return pathLine(myArray);
+                })
+                .attr('opacity', 0);
+            
+            lineupdates.merge(lineenters)
+                .transition(transition).delay(1000)
+                .attr('opacity', 1);
+            lineupdates.exit().remove();
+
+
+            
+            await transition.end();
+        };
+
+        const tweenPie = function (b) {
+            const arcPath = d3.arc().innerRadius(0).outerRadius(200);
+			var i = d3.interpolate({startAngle:0, endAngle:0}, b);
+			return function(t){return arcPath(i(t));};
+		};
+
+        d3.csv('Data/AQI_seasonmean_D3.csv').then(async data => {
+          data.forEach(datum => {
+              datum.AQI = +(datum.AQI);
+              datum.Season = +(datum.Season);
+          });
+          console.log(data)
+          
+          let data_per_year = {};
+          allkeys = Array.from(new Set(data.map(d => keyValue(d))));
+          allkeys.sort();
+          allkeys.forEach(key => { data_per_year[key] = [] });
+          data.forEach(d => {
+              if (xValue(d) != -1) 
+                data_per_year[keyValue(d)].push(d); 
+          });
+          allkeys.forEach(key => data_per_year[key].sort(function (a, b) {
+                return xValue(b) - xValue(a);
+          }));
+          
+          //render_init(data);
+
+          d3.csv('Data/citynamewithlocation.csv').then(async data => {
+              var city_region = {}
+              data.forEach(datum => {
+                city_region[datum.City] = datum.Region;
+              })
+
+              //for(let i = 0; i < allkeys.length; i++){
+              for(let i = 0; i < allkeys.length; i++){
+                // console.log(allkeys[i]);
+                // console.log(data_per_year[allkeys[i]])
+                var render_data
+                var region_count = {}
+                var pie_data = []
+                if (good == 'AQI最差')
+                    render_data = data_per_year[allkeys[i]].slice(0, 20);
+                    //await render_update(data_per_year[allkeys[i]].slice(0, 20));
+                else
+                    render_data = data_per_year[allkeys[i]].slice(-20, -1).reverse();
+                    //await render_update(data_per_year[allkeys[i]].slice(-20, -1).reverse());
+                region.forEach(d => {
+                    region_count[d] = 0
+                })
+                render_data.forEach(d => {
+                    region_count[city_region[yValue(d)]] += 1;
+                })
+                region.forEach(d => {
+                    pie_data.push({region: d, count: region_count[d]});
+                })
+                console.log(pie_data)
+                await render_update(pie_data);
+            }
+          });
         })
     }
 
